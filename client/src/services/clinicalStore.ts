@@ -47,16 +47,16 @@ const DEFAULT_CHILDREN: StoredChild[] = [
     gender: 'FEMALE',
     region: 'Toshkent shahar',
     photoUrl: 'https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?w=150',
-    chiefComplaint: 'Oyoqlarida spastiklik bor, tayanchsiz mustaqil yura olmaydi, muvozanat sust.',
+    chiefComplaint: 'Oyoqlarda spastik diplegiya, tayanchsiz mustaqil o‘tirolmaydi va yurolmaydi, yengil kognitiv kechikish.',
     conditions: [
-      { condition: { code: 'CP', name: 'Bolalar Tserebral Falaji (BTF)' } },
+      { condition: { code: 'MKB_F70_G80', name: 'MKB-10 F70 + G80 III-IV: Yengil aqliy zaiflik + Bolalar serebral falaji' } },
     ],
     medicalProfile: {
-      doctorConclusions: 'Bolalar tserebral falaji, spastik diplegiya.',
-      priorTherapy: 'Bobath terapiya va fizioterapiya',
+      doctorConclusions: 'MKB-10 F70 (Aqliy zaiflikning yengil darajasi) va MKB-10 G80 (Tserebral falaj III-IV darajasi, spastik diplegiya).',
+      priorTherapy: 'Bobath terapiya, fizioterapiya va postural korreksiya',
       currentMedications: 'Baclofen 5mg (shifokor nazoratida)',
       allergies: 'Yo‘q',
-      precautionsContraindications: 'Bo‘g‘imlarni keskin cho‘zish taqiqlanadi.',
+      precautionsContraindications: 'Bo‘g‘imlarni keskin cho‘zish taqiqlanadi. Faqat yumshoq passiv-faol harakatlar.',
     },
     packages: [],
     assessments: [],
@@ -69,16 +69,38 @@ const DEFAULT_CHILDREN: StoredChild[] = [
     gender: 'MALE',
     region: 'Samarqand viloyati',
     photoUrl: 'https://images.unsplash.com/photo-1595454223600-91fb579fa599?w=150',
-    chiefComplaint: 'Kognitiv topshiriqlarni sekin o‘zlashtiradi, o‘z-o‘ziga xizmat ko‘nikmalarida yordam kerak.',
+    chiefComplaint: 'O‘z-o‘ziga xizmat (ADL) va mantiqiy vazifalarni bajarishda doimiy yo‘naltirish va yordamga muhtoj.',
     conditions: [
-      { condition: { code: 'DOWN', name: 'Daun Sindromi (Trisomiya 21)' } },
+      { condition: { code: 'MKB_F71', name: 'MKB-10 F71: Aqliy zaiflikning o‘rta darajasi' } },
     ],
     medicalProfile: {
-      doctorConclusions: 'Daun sindromi. Mushaklar gipotonusi.',
-      priorTherapy: 'Logopedik korreksiya',
-      currentMedications: 'Vitamin D3',
+      doctorConclusions: 'MKB-10 F71: Aqliy zaiflikning o‘rta darajasi, fe’l-atvor buzilishining yo‘qligi yoki kuchsiz ifodalanganligi.',
+      priorTherapy: 'Maxsus pedagogik korreksiya va ergoterapiya',
+      currentMedications: 'Nootrop va vitaminlar kursi',
       allergies: 'Yo‘q',
-      precautionsContraindications: 'Bo‘yin umurtqasini keskin bukish taqiqlanadi.',
+      precautionsContraindications: 'Murakkab ko‘p bosqichli ko‘rsatmalar bermaslik. Vazifalarni mayda qadamlarga bo‘lish.',
+    },
+    packages: [],
+    assessments: [],
+  },
+  {
+    id: 'child-zilola',
+    firstName: 'Zilola',
+    lastName: 'Ahmadova',
+    dateOfBirth: '2021-11-05',
+    gender: 'FEMALE',
+    region: 'Farg‘ona viloyati',
+    photoUrl: 'https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=150',
+    chiefComplaint: 'Koxlear implant operatsiyasidan so‘ng tovushlarni farqlash va nutqiy taqlidni shakllantirish zarur.',
+    conditions: [
+      { condition: { code: 'MKB_H90_3', name: 'MKB-10 H90.3: Orttirilgan kar-soqovlik (Koxlear implant / eshitish apparati)' } },
+    ],
+    medicalProfile: {
+      doctorConclusions: 'MKB-10 H90.3: Ikki tomonlama neyrosensor eshitish yo‘qotilishi. Koxlear implantatsiya o‘tkazilgan (o‘ng quloq).',
+      priorTherapy: 'Surdopedagogik va audiologik moslashtirish',
+      currentMedications: 'Mavjud emas',
+      allergies: 'Yo‘q',
+      precautionsContraindications: 'Koxlear implant protsessoriga suv tekkizmaslik va magnit ta’sirlardan saqlash.',
     },
     packages: [],
     assessments: [],
@@ -204,7 +226,10 @@ export class ClinicalStore {
   public static getChildren(): StoredChild[] {
     try {
       const data = localStorage.getItem('mehr_local_children');
-      if (data) return JSON.parse(data);
+      if (data) {
+        const parsed = JSON.parse(data);
+        if (Array.isArray(parsed) && parsed.length >= 4) return parsed;
+      }
     } catch {}
     localStorage.setItem('mehr_local_children', JSON.stringify(DEFAULT_CHILDREN));
     return DEFAULT_CHILDREN;
@@ -269,23 +294,228 @@ export class ClinicalStore {
   }
 
   /**
-   * Run 13-step AI algorithm locally on client
+   * Run 13-step AI algorithm locally on client tailored for MKB-10 diagnoses
    */
   public static generateAiPackage(childId: string, parentGoals?: string) {
     const children = this.getChildren();
     const child = children.find((c) => c.id === childId) || children[0];
 
-    const pkg = {
-      id: `pkg-${Date.now()}`,
-      childId: child.id,
-      title: `MEHR Individual Rivojlantirish Paketi: ${child.firstName} (4 yosh)`,
-      summary: `Bolaning kognitiv va nutq ko‘rsatkichlari tahlil qilindi. Asosiy ehtiyojlar funktsional AAC muloqoti va mustaqillikni oshirishga yo‘naltirilgan 30 kunlik reja.`,
-      durationDays: 30,
-      priorityDomains: ['Nutq va kommunikatsiya', 'Ijtimoiy rivojlanish', 'Mustaqil hayot'],
-      status: 'APPROVED',
-      version: 1,
-      specialistFeedback: 'Klinik tavsiyalarga to‘liq mos. Kunlik 15 daqiqalik AAC mashg‘ulotlariga ustuvorlik berilsin. — Dr. Nodira Rahimova',
-      modules: [
+    const conditionCodes = (child.conditions || []).map((c: any) => c.condition?.code || c.code || '').join(' ').toLowerCase();
+    const notes = `${child.chiefComplaint || ''} ${child.medicalProfile?.doctorConclusions || ''} ${conditionCodes}`.toLowerCase();
+
+    const isF70_G80 =
+      notes.includes('f70_g80') ||
+      (notes.includes('f70') && (notes.includes('g80') || notes.includes('falaj') || notes.includes('cp'))) ||
+      (notes.includes('g80') && (notes.includes('zaif') || notes.includes('f70'))) ||
+      (notes.includes('falaj') && (notes.includes('aqliy zaif') || notes.includes('f70')));
+
+    const isH90_3 =
+      notes.includes('h90') ||
+      notes.includes('koxlear') ||
+      notes.includes('cochlear') ||
+      notes.includes('kar-soqov') ||
+      notes.includes('eshitish apparat');
+
+    const isF71 =
+      notes.includes('f71') ||
+      (notes.includes('o‘rta') && notes.includes('aqliy')) ||
+      (notes.includes('orta') && notes.includes('aqliy'));
+
+    let summaryText = '';
+    let priorityDomains: string[] = [];
+    let specialistReferrals: string[] = [];
+    let modules: any[] = [];
+    let taskTemplates: any[] = [];
+    let specialistFeedback = '';
+
+    if (isF70_G80) {
+      summaryText = `MKB-10 F70 (Yengil aqliy zaiflik) va G80 (Tserebral falaj III-IV daraja) bo‘yicha postural nazorat, bo‘g‘im kontrakturalarini oldini olish va moslashtirilgan kognitiv o‘yinlar rejasi tuzildi.`;
+      priorityDomains = ['Motor rivojlanish', 'Kognitiv rivojlanish', 'Mustaqil hayot ko‘nikmalari'];
+      specialistReferrals = ['FIZIOTERAPEVT', 'ERGOTERAPEVT', 'NEVROLOG', 'MAXSUS_PEDAGOG'];
+      specialistFeedback = 'GMFCS III-IV bo‘yicha tayanchli stulda simmetrik o‘tirish va yengil aqliy rag‘batlantirish tavsiya etiladi. — Dr. Nodira Rahimova';
+
+      modules = [
+        {
+          weekNumber: 1,
+          focusArea: 'Postural joylashish va bo‘g‘imlar harakatchanligi',
+          weeklyGoal: 'Yotgan va o‘tirgan holatda mushak spastikligini yengillashtirish.',
+          expectedOutcome: 'Mushaklar gipertonusi kamayadi, erkin nafas olish osonlashadi.',
+          parentAdvice: 'Mashqlarni muloyimlik bilan, keskin harakatlarsiz o‘tkazing.',
+        },
+        {
+          weekNumber: 2,
+          focusArea: 'Bosh va gavda muvozanati (Ergoterapiya)',
+          weeklyGoal: 'O‘rindiqda o‘tirganda ko‘z oldidagi buyumga qo‘l cho‘zish.',
+          expectedOutcome: 'Qo‘l harakatlari koordinatsiyasi yaxshilanadi.',
+          parentAdvice: 'Bolaning orqa va yon tomonlariga yumshoq valiklar qo‘yib simmetriyani saqlang.',
+        },
+        {
+          weekNumber: 3,
+          focusArea: 'Sodda kognitiv saralash (F70)',
+          weeklyGoal: 'Katta va kichik geometrik shakllarni ajratish.',
+          expectedOutcome: 'Oddiy mantiqiy tushunchalar mustahkamlanadi.',
+          parentAdvice: 'Qo‘li harakatlanishiga ko‘maklashib, faqat kognitiv tanlovni o‘ziga qoldiring.',
+        },
+        {
+          weekNumber: 4,
+          focusArea: 'Kundalik faoliyatda moslashtirilgan ishtirok',
+          weeklyGoal: 'Qalin tutqichli stakandan suv ichish harakatida qatnashish.',
+          expectedOutcome: 'O‘z-o‘ziga xizmat qilish ishtiyoqi ortadi.',
+          parentAdvice: 'Kichik yutuqni ham katta xursandchilik bilan olqishlang.',
+        },
+      ];
+
+      taskTemplates = [
+        {
+          title: 'Postural barqarorlik: Tayanch stulda to‘g‘ri simmetrik o‘tirish',
+          materials: 'Moslashtirilgan stul, bel va bosh tayanchi, yon valiklar.',
+          instructions: 'Bolani stulga simmetrik joylashtiring. Boshini to‘g‘ri tutishiga rag‘bat berish uchun ko‘z darajasida qiziqarli rasm ko‘rsating.',
+          parentTip: 'Gavda bir tomonga qiyshayib qolmasligini diqqat bilan nazorat qiling.',
+          targetBehavior: 'Postural nazorat va boshni ushlab turish.',
+        },
+        {
+          title: 'Mayda motorika: Qalin tutqichli o‘yinchoqni ushlash',
+          materials: 'Yumshoq rezina halqa yoki qalin tutqichli piramida halqasi.',
+          instructions: 'Buyumni bolaning kaftiga qo‘ying va barmoqlarini yopishga muloyim yordam bering.',
+          parentTip: 'Spastik mushaklarni avval silab bo‘shashtiring.',
+          targetBehavior: 'Qo‘l panjasi bilan ushlash refleksi.',
+        },
+        {
+          title: 'Kognitiv topshiriq: Katta va kichik to‘pni tanlash (F70)',
+          materials: '1 ta katta qizil to‘p, 1 ta kichik qizil to‘p.',
+          instructions: 'Ikkala to‘pni ko‘rsatib, “Kattasini ko‘rsat” deb iltimos qiling. Ko‘zi yoki qo‘li bilan ishora qilishiga imkon bering.',
+          parentTip: 'Harakat cheklangan bo‘lsa ham ko‘z nigohi orqali tanlashni qabul qiling.',
+          targetBehavior: 'Hajmni farqlash.',
+        },
+      ];
+    } else if (isH90_3) {
+      summaryText = `Bolaning Koxlear implant (MKB-10 H90.3) bo‘yicha eshitish analizatori va audiotrenirovka ehtiyojlari tahlil qilindi. Dastur tovush bor-yo‘qligini aniqlash, maishiy va nutqiy tovushlarni farqlash hamda fonematik idrokni shakllantirishga yo‘naltirildi.`;
+      priorityDomains = ['Nutq va kommunikatsiya', 'Ijtimoiy rivojlanish', 'Kognitiv rivojlanish'];
+      specialistReferrals = ['SURDOPEDAGOG', 'AUDIOLOG', 'LOGOPED'];
+      specialistFeedback = 'Koxlear implant protsessori sozlamalarini audiolog nazoratida ushlang va Ling 6 testini kunlik qo‘llang. — Dr. Nodira Rahimova';
+
+      modules = [
+        {
+          weekNumber: 1,
+          focusArea: 'Tovush bor/yo‘qligini aniqlash (Deteksiya)',
+          weeklyGoal: 'Tovush yangraganda o‘yinchoqni qutiga tashlash o‘yini.',
+          expectedOutcome: 'Tovushga 70% holatda aniq e’tibor qaratish.',
+          parentAdvice: 'Kuniga 2 marta 15 daqiqadan, koxlear implant protsessori toza va batareyasi to‘la ekanini tekshirib bajaring.',
+        },
+        {
+          weekNumber: 2,
+          focusArea: 'Tovushlar balandligi va davomiyligini farqlash',
+          weeklyGoal: 'Baland/past va uzun/qisqa tovushlarni ajratish.',
+          expectedOutcome: 'Turli asboblar (baraban, qo‘ng‘iroq) tovushini vizual ajrata olish.',
+          parentAdvice: 'Musiqiy o‘yinchoqlarni bolaning ko‘rish doirasidan orqaroqda chaling.',
+        },
+        {
+          weekNumber: 3,
+          focusArea: 'Ling 6 tovushlar testi va fonematik eshituv',
+          weeklyGoal: '[A], [U], [I] unlilarini eshitib, mos rasmga ishora qilish.',
+          expectedOutcome: 'Unli tovushlarni adashtirmasdan ajrata olish.',
+          parentAdvice: 'Tovushlarni labingizni berkitmasdan, ravshan va mayin ohangda talaffuz qiling.',
+        },
+        {
+          weekNumber: 4,
+          focusArea: 'Funktsional so‘zlarni tushunish va taqlid',
+          weeklyGoal: 'Kundalik “Salom”, “Xayr”, “Suv” so‘zlarini eshitib qabul qilish.',
+          expectedOutcome: 'Eshitish xotirasi va nutqiy taqlid faollashadi.',
+          parentAdvice: 'Har bir harakatni baland, ohangdor ovoz bilan jo‘rlikda bajaring.',
+        },
+      ];
+
+      taskTemplates = [
+        {
+          title: 'Tovushni eshitish — “Qutichaga tashla” audiotrenirovkasi',
+          materials: 'Baraban yoki shiqildoq, kichik plastik idish, toshchalar.',
+          instructions: 'Bolaning koxlear implantini yoqing. Orqada turib shiqildoq chaling. Tovush chiqqanda bola toshchani idishga tashlasin.',
+          parentTip: 'Faqat tovush eshitilgandagina tashlashga undang, shoshilmang.',
+          targetBehavior: 'Tovush paydo bo‘lishiga motor reaksiya bildirish.',
+        },
+        {
+          title: 'Ling 6 tovushlarini ajratish: [A] va [U]',
+          materials: 'Samolyot rasmi [Aaaaa] va poyezd rasmi [Uuuuu].',
+          instructions: 'Tovushni ayting va boladan mos transport rasmini ko‘rsatishini so‘rang.',
+          parentTip: 'Dastlab labingizni ko‘rsating, keyin esa og‘zingizni qog‘oz bilan to‘sib sinab ko‘ring.',
+          targetBehavior: 'Fonematik farqlash.',
+        },
+        {
+          title: 'Nafas va artikulyatsion gimnastika: Paxta puflash',
+          materials: 'Paxta bo‘lagi, silliq stol yuzasi.',
+          instructions: 'Kaftingizdagi paxtani og‘izdan chuqur nafas chiqarib stol ustiga puflang.',
+          parentTip: 'Bola burun bilan emas, lablarini cho‘chchaytirib og‘izdan puflashiga yordam bering.',
+          targetBehavior: 'Artikulyatsion apparat va nafasni kuchaytirish.',
+        },
+      ];
+    } else if (isF71) {
+      summaryText = `MKB-10 F71 (Aqliy zaiflikning o‘rta darajasi) bo‘yicha mustaqil hayot ko‘nikmalari (ADL), vazifani mayda qadamlarga bo‘lish (Task analysis) va vizual jadvallar dasturi ishlab chiqildi.`;
+      priorityDomains = ['Mustaqil hayot ko‘nikmalari', 'Kognitiv rivojlanish', 'Ijtimoiy rivojlanish'];
+      specialistReferrals = ['MAXSUS_PEDAGOG', 'ERGOTERAPEVT', 'LOGOPED'];
+      specialistFeedback = 'Bosqichma-bosqich o‘rgatish (task analysis) va vizual jadvallar tavsiya etiladi. — Kamola Yusupova';
+
+      modules = [
+        {
+          weekNumber: 1,
+          focusArea: 'Ovqatlanishda mustaqillik',
+          weeklyGoal: 'Qoshiq bilan bo‘tqa yoki ovqatni mustaqil yeyish.',
+          expectedOutcome: 'Kattalar aralashuvisiz ovqatlanish vaqti oshadi.',
+          parentAdvice: 'Ovqat to‘kilsa ham urishmang, har bir mustaqil qoshiq uchun maqtang.',
+        },
+        {
+          weekNumber: 2,
+          focusArea: 'Qo‘l yuvish va gigiyena zanjiri',
+          weeklyGoal: 'Jo‘mrakni ochish, sovunlash va yopish ketma-ketligi.',
+          expectedOutcome: '3 bosqichli zanjirni mustaqil bajara olish.',
+          parentAdvice: 'Vannaxonaga rasmli bosqichlarni yopishtirib qo‘ying.',
+        },
+        {
+          weekNumber: 3,
+          focusArea: 'Kiyim kiyish va yechish ko‘nikmalari',
+          weeklyGoal: 'Paypoq, shlyapa va oyoq kiyimni yechish va kiyish.',
+          expectedOutcome: 'Oddiy kiyimlarni o‘zi kiyishga urinish.',
+          parentAdvice: 'Qulay, tugmasiz va yopishqoqli kiyimlardan boshlang.',
+        },
+        {
+          weekNumber: 4,
+          focusArea: 'Xonani tartibga solish va oddiy vazifalar',
+          weeklyGoal: 'O‘yinchoqlarni qutiga yig‘ishtirish.',
+          expectedOutcome: 'Uy muhitida tartib-intizom shakllanadi.',
+          parentAdvice: 'Birgalikda qo‘shiq aytib, o‘yin tarzida bajaring.',
+        },
+      ];
+
+      taskTemplates = [
+        {
+          title: 'Mustaqil ovqatlanish: Qoshiq bilan ishlash mashqi',
+          materials: 'Chuqur plastmassa likopcha, quyuq bo‘tqa, qulay qoshiq.',
+          instructions: 'Likopchani oldiga qo‘ying. Qoshiqni qo‘liga berib, birinchi 2 ta luqmani birga, keyingilarini esa o‘zi olishiga qo‘yib bering.',
+          parentTip: 'Faqat zarur bo‘lganda bilagidan muloyim ushlab yo‘naltiring.',
+          targetBehavior: 'Qoshiqni og‘izga to‘g‘ri yetkazish.',
+        },
+        {
+          title: 'Vizual ketma-ketlik: Qo‘l yuvish zanjiri',
+          materials: 'Sovun, sochiq, 3 ta ketma-ket rasm.',
+          instructions: 'Rasmni ko‘rsatib: 1) Suvni ochamiz, 2) Sovunlaymiz, 3) Sochiqqa artamiz.',
+          parentTip: 'Har bir bosqichni qisqa va tushunarli so‘zlar bilan aytib turing.',
+          targetBehavior: 'Tartibli harakat zanjiri.',
+        },
+        {
+          title: 'Saralash: O‘yinchoqlarni savatchaga yig‘ish',
+          materials: 'Yoyilgan 5 ta o‘yinchoq, 1 ta savatcha.',
+          instructions: '“O‘yinchoqni savatga sol” deb buyruq bering va har bir tushgan o‘yinchoq uchun qarsak chaling.',
+          parentTip: 'Bola diqqati chalg‘isa, muloyimlik bilan buyumni qo‘liga tutqazing.',
+          targetBehavior: 'Topshiriqni oxirigacha yetkazish.',
+        },
+      ];
+    } else {
+      // MKB-10 F84 / ASD
+      summaryText = `MKB-10 F84 (Bolalar autizmi) bo‘yicha funktsional kommunikatsiya (AAC), ijtimoiy ko‘z bilan aloqa va sensor xotirjamlikka qaratilgan 30 kunlik reabilitatsiya dasturi shakllantirildi.`;
+      priorityDomains = ['Nutq va kommunikatsiya', 'Ijtimoiy rivojlanish', 'Mustaqil hayot ko‘nikmalari'];
+      specialistReferrals = ['LOGOPED', 'PSIXOLOG', 'NEVROLOG'];
+      specialistFeedback = 'Klinik tavsiyalarga to‘liq mos. Kunlik 15 daqiqalik AAC mashg‘ulotlariga ustuvorlik berilsin. — Dr. Nodira Rahimova';
+
+      modules = [
         {
           weekNumber: 1,
           focusArea: 'Vizual idrok va ilk AAC kartochkalari',
@@ -314,44 +544,63 @@ export class ClinicalStore {
           expectedOutcome: 'Ko‘nikma turli vaziyatlarda barqaror qo‘llaniladi.',
           parentAdvice: 'Barcha oila a’zolari bir xil reaksiyada bo‘lishi zarur.',
         },
-      ],
-      dailyTasks: [
+      ];
+
+      taskTemplates = [
         {
-          id: 'task-1',
-          dayNumber: 1,
-          title: '1-kun: “Suv” kartochkasi bilan ilk tanishuv',
-          durationMinutes: 15,
+          title: '“Suv” kartochkasi bilan ilk tanishuv',
           materials: '“Suv” AAC kartochkasi va shaffof stakan.',
           instructions: 'Suvga intilganda kartochkani qo‘liga bering va sizga uzatishiga yo‘naltiring.',
           parentTip: 'Kartochkani olganingizda jilmayib darhol “Suv! Barakalla!” deb ayting.',
           targetBehavior: 'Kartochkani uzatish orqali suv so‘rash.',
-          results: [{ status: 'COMPLETED', assistanceLevel: 3, childReaction: 'POSITIVE' }],
         },
         {
-          id: 'task-2',
-          dayNumber: 2,
-          title: '2-kun: “Suv” kartochkasini stoldan tanlash',
-          durationMinutes: 15,
-          materials: 'Stol, stakan, “Suv” kartochkasi.',
-          instructions: 'Kartochkani stol ustiga qo‘ying va mustaqil qo‘l cho‘zishiga imkon bering.',
-          parentTip: 'Bolaga 5-7 soniya mustaqil o‘ylash uchun tanaffus bering.',
-          targetBehavior: 'Stoldagi kartochkaga o‘z ixtiyori bilan qo‘l cho‘zish.',
-          results: [],
+          title: 'Qisqichsimon barmoq tutqichi: Rangli butilka qopqoqlari',
+          materials: 'Kichik quticha va rangli butilka qopqoqlari.',
+          instructions: 'Bosh va ko‘rsatkich barmoq bilan qopqoqni ushlab qutiga birma-bir tashlash mashqi.',
+          parentTip: 'Muloyimlik bilan ikki barmoqqa yo‘naltiring.',
+          targetBehavior: 'Ikki barmoq bilan ushlash.',
         },
         {
-          id: 'task-3',
-          dayNumber: 3,
-          title: '3-kun: “Yana” funktsional so‘rov mashqi',
-          durationMinutes: 15,
+          title: '“Yana” funktsional so‘rov mashqi',
           materials: 'Sovun pufakchalari, “Yana” AAC kartasi.',
           instructions: 'Pufak puflang, to‘xtab kuting. Bola davom ettirishni istaganda kartochkani ko‘rsatsin.',
           parentTip: 'Harakatni davom ettirishdan oldin quvonchni qo‘llab-quvvatlang.',
           targetBehavior: 'Muloqot orqali harakatni davom ettirishni so‘rash.',
-          results: [],
         },
-      ],
-      specialistReferrals: ['LOGOPED', 'PSIXOLOG', 'NEVROLOG'],
-      disclaimer: 'MEHR AI yordamchi tavsiyasi — mutaxassis xulosasining o‘rnini bosmaydi.',
+      ];
+    }
+
+    const dailyTasks: any[] = [];
+    for (let day = 1; day <= 30; day++) {
+      const t = taskTemplates[(day - 1) % taskTemplates.length];
+      dailyTasks.push({
+        id: `task-${day}-${Date.now()}`,
+        dayNumber: day,
+        title: `${day}-kun: ${t.title}`,
+        durationMinutes: 15,
+        materials: t.materials,
+        instructions: t.instructions,
+        parentTip: t.parentTip,
+        targetBehavior: t.targetBehavior,
+        results: day === 1 ? [{ status: 'COMPLETED', assistanceLevel: 3, childReaction: 'POSITIVE' }] : [],
+      });
+    }
+
+    const pkg = {
+      id: `pkg-${Date.now()}`,
+      childId: child.id,
+      title: `MEHR Individual Rivojlantirish Paketi: ${child.firstName}`,
+      summary: summaryText,
+      durationDays: 30,
+      priorityDomains,
+      status: 'APPROVED',
+      version: 1,
+      specialistFeedback,
+      modules,
+      dailyTasks,
+      specialistReferrals,
+      disclaimer: 'MEHR AI yordamchi tavsiyasi — shifokor yoki mutaxassis xulosasining o‘rnini bosmaydi. Yakuniy reja malakali mutaxassis tomonidan tasdiqlanishi tavsiya etiladi.',
     };
 
     localStorage.setItem(`mehr_package_${child.id}`, JSON.stringify(pkg));

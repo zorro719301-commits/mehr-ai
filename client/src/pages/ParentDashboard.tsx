@@ -137,8 +137,11 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({ onNavigate, on
 
             <div className="flex flex-wrap items-center justify-center sm:justify-start gap-1.5 text-xs text-slate-500 font-medium">
               <span>Tug‘ilgan sana: {new Date(activeChild.dateOfBirth).toLocaleDateString()}</span>
-              <span>•</span>
-              <span className="text-emerald-700 font-semibold">Tashxis: Autizm spektri (ASD), Nutq kechikishi</span>
+              <span className="text-emerald-700 font-semibold">
+                Tashxis: {activeChild.conditions && activeChild.conditions.length > 0
+                  ? activeChild.conditions.map((c: any) => c.condition?.name || c.name || c).join(', ')
+                  : (activeChild.medicalProfile?.doctorConclusions || 'MKB-10 F84 (Autizm spektri)')}
+              </span>
             </div>
 
             {activeChild.chiefComplaint && (
