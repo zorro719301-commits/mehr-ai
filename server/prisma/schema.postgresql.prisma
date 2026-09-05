@@ -1,0 +1,764 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// -------------------------------------------------------------
+// 1. AUTHENTICATION & ACCESS CONTROL (RBAC)
+// -------------------------------------------------------------
+
+model User {
+  id                String             @id @default(uuid())
+  email             String             @unique
+  passwordHash      String
+  fullName          String
+  phone             String?
+  role              String             @default("PARENT") // PARENT, SPECIALIST, ADMIN
+  avatarUrl         String?
+  isActive          Boolean            @default(true)
+  twoFactorEnabled  Boolean            @default(false)
+  lastLoginAt       DateTime?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  parentProfile     ParentProfile?
+  specialistProfile SpecialistProfile?
+  auditLogs         AuditLog[]
+  consents          Consent[]
+  sessions          Session[]
+  sentMessages      Message[]          @relation("SentMessages")
+  receivedMessages  Message[]          @relation("ReceivedMessages")
+  notifications     Notification[]
+  offlineQueue      OfflineSyncQueue[]
+  aiFeedbacks       AiFeedback[]
+  userRoles         UserRole[]
+
+  @@index([email])
+  @@index([role])
+}
+
+model Role {
+  id          String       @id @default(uuid())
+  name        String       @unique
+  description String?
+  userRoles   UserRole[]
+  permissions RolePermission[]
+}
+
+model Permission {
+  id          String           @id @default(uuid())
+  name        String           @unique
+  module      String
+  description String?
+  roles       RolePermission[]
+}
+
+model UserRole {
+  id        String   @id @default(uuid())
+  userId    String
+  roleId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId])
+}
+
+model RolePermission {
+  id           String     @id @default(uuid())
+  roleId       String
+  permissionId String
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+}
+
+model Session {
+  id           String    @id @default(uuid())
+  userId       String
+  refreshToken String    @unique
+  ipAddress    String?
+  userAgent    String?
+  expiresAt    DateTime
+  createdAt    DateTime  @default(now())
+  revokedAt    DateTime?
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model ParentProfile {
+  id               String        @id @default(uuid())
+  userId           String        @unique
+  relationType     String        @default("MOTHER")
+  address          String?
+  emergencyContact String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  user             User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  children         ChildParent[]
+}
+
+model SpecialistType {
+  id          String              @id @default(uuid())
+  name        String              
+  code        String              @unique
+  description String?
+  specialists SpecialistProfile[]
+}
+
+model SpecialistProfile {
+  id               String             @id @default(uuid())
+  userId           String             @unique
+  specialistTypeId String
+  licenseNumber    String?
+  institution      String?
+  bio              String?
+  isVerified       Boolean            @default(true)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  specialistType   SpecialistType     @relation(fields: [specialistTypeId], references: [id])
+  reviews          SpecialistReview[]
+  therapySessions  TherapySession[]
+  appointments     Appointment[]
+}
+
+model Child {
+  id             String                @id @default(uuid())
+  firstName      String
+  lastName       String
+  dateOfBirth    DateTime
+  gender         String                
+  region         String                
+  photoUrl       String?
+  chiefComplaint String?               
+  isActive       Boolean               @default(true)
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+
+  parents        ChildParent[]
+  medicalProfile ChildMedicalProfile?
+  conditions     ChildCondition[]
+  assessments    Assessment[]
+  plans          IndividualPlan[]
+  packages       IndividualPackage[]
+  childExercises ChildExercise[]
+  dailyResults   DailyTaskResult[]
+  behaviorLogs   BehaviorLog[]
+  speechLogs     SpeechLog[]
+  aacBoards      ChildAacBoard[]
+  progressRecords ProgressRecord[]
+  progressReports ProgressReport[]
+  appointments   Appointment[]
+  documents      Document[]
+  consents       Consent[]
+  aiRequests     AiRequest[]
+  therapySessions TherapySession[]
+
+  @@index([region])
+  @@index([createdAt])
+}
+
+model ChildParent {
+  id               String        @id @default(uuid())
+  childId          String
+  parentId         String
+  isPrimary        Boolean       @default(true)
+  canManageConsent Boolean       @default(true)
+
+  child            Child         @relation(fields: [childId], references: [id], onDelete: Cascade)
+  parent           ParentProfile @relation(fields: [parentId], references: [id], onDelete: Cascade)
+
+  @@unique([childId, parentId])
+}
+
+model ChildMedicalProfile {
+  id                         String   @id @default(uuid())
+  childId                    String   @unique
+  doctorConclusions          String?  
+  priorTherapy               String?  
+  currentMedications         String?  
+  allergies                  String?  
+  pastMedicalConditions      String?  
+  precautionsContraindications String? 
+  updatedAt                  DateTime @updatedAt
+
+  child                      Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
+}
+
+model ConditionOrDiagnosis {
+  id                    String           @id @default(uuid())
+  code                  String           @unique 
+  name                  String           
+  description           String
+  symptoms              String           
+  riskSigns             String?          
+  recommendedSpecialists String          
+  defaultDurationDays   Int              @default(30)
+  isActive              Boolean          @default(true)
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+
+  childConditions       ChildCondition[]
+  exercises             Exercise[]
+}
+
+model ChildCondition {
+  id             String               @id @default(uuid())
+  childId        String
+  conditionId    String
+  diagnosedDate  DateTime?
+  doctorName     String?
+  severity       String?              
+  notes          String?
+
+  child          Child                @relation(fields: [childId], references: [id], onDelete: Cascade)
+  condition      ConditionOrDiagnosis @relation(fields: [conditionId], references: [id], onDelete: Cascade)
+
+  @@unique([childId, conditionId])
+}
+
+model DevelopmentDomain {
+  id          String                 @id @default(uuid())
+  name        String                 
+  code        String                 @unique 
+  description String?
+  orderIndex  Int                    @default(0)
+
+  indicators  DevelopmentIndicator[]
+  questions   AssessmentQuestion[]
+  results     AssessmentResult[]
+  goals       IndividualGoal[]
+  progress    ProgressRecord[]
+}
+
+model DevelopmentIndicator {
+  id          String            @id @default(uuid())
+  domainId    String
+  name        String            
+  criteria0   String            
+  criteria1   String            
+  criteria2   String            
+  criteria3   String            
+  criteria4   String            
+  criteria5   String            
+
+  domain      DevelopmentDomain @relation(fields: [domainId], references: [id], onDelete: Cascade)
+}
+
+model AssessmentQuestion {
+  id            String             @id @default(uuid())
+  domainId      String
+  questionText  String
+  minAgeMonths  Int                @default(0)
+  maxAgeMonths  Int                @default(216) 
+  orderIndex    Int                @default(0)
+  domain        DevelopmentDomain  @relation(fields: [domainId], references: [id], onDelete: Cascade)
+  answers       AssessmentAnswer[]
+}
+
+model Assessment {
+  id             String             @id @default(uuid())
+  childId        String
+  conductedById  String?            
+  type           String             @default("BASELINE") 
+  totalScore     Float              @default(0)
+  maxScore       Float              @default(0)
+  notes          String?
+  createdAt      DateTime           @default(now())
+
+  child          Child              @relation(fields: [childId], references: [id], onDelete: Cascade)
+  answers        AssessmentAnswer[]
+  results        AssessmentResult[]
+
+  @@index([childId])
+}
+
+model AssessmentAnswer {
+  id           String             @id @default(uuid())
+  assessmentId String
+  questionId   String
+  score        Int                
+  notes        String?
+
+  assessment   Assessment         @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  question     AssessmentQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([assessmentId, questionId])
+}
+
+model AssessmentResult {
+  id           String            @id @default(uuid())
+  assessmentId String
+  domainId     String
+  score        Float
+  percentage   Float
+  level        String            
+  interpretation String?
+
+  assessment   Assessment        @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  domain       DevelopmentDomain @relation(fields: [domainId], references: [id], onDelete: Cascade)
+
+  @@unique([assessmentId, domainId])
+}
+
+model IndividualPlan {
+  id           String              @id @default(uuid())
+  childId      String
+  version      Int                 @default(1)
+  status       String              @default("DRAFT") 
+  startDate    DateTime            @default(now())
+  endDate      DateTime?
+  createdById  String?
+  approvedById String?
+  approvalDate DateTime?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  child        Child               @relation(fields: [childId], references: [id], onDelete: Cascade)
+  goals        IndividualGoal[]
+  packages     IndividualPackage[]
+}
+
+model IndividualGoal {
+  id          String            @id @default(uuid())
+  planId      String
+  domainId    String
+  title       String
+  description String?
+  priority    Int               @default(1) 
+  termType    String            @default("SHORT_TERM") 
+  targetDate  DateTime?
+  status      String            @default("IN_PROGRESS") 
+
+  plan        IndividualPlan    @relation(fields: [planId], references: [id], onDelete: Cascade)
+  domain      DevelopmentDomain @relation(fields: [domainId], references: [id], onDelete: Cascade)
+}
+
+model IndividualPackage {
+  id                  String             @id @default(uuid())
+  childId             String
+  planId              String?
+  title               String             
+  summary             String             
+  durationDays        Int                @default(30)
+  priorityDomains     String             
+  status              String             @default("PENDING_REVIEW") 
+  version             Int                @default(1)
+  aiModelUsed         String             @default("mehr-clinical-ai-v1")
+  promptVersion       String             @default("2026.09.v1")
+  specialistFeedback  String?
+  dangerSignsWarning  String?            
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  child               Child              @relation(fields: [childId], references: [id], onDelete: Cascade)
+  plan                IndividualPlan?    @relation(fields: [planId], references: [id])
+  modules             PackageModule[]
+  dailyTasks          DailyTask[]
+  childExercises      ChildExercise[]
+  specialistReviews   SpecialistReview[]
+
+  @@index([childId])
+  @@index([status])
+}
+
+model PackageModule {
+  id              String            @id @default(uuid())
+  packageId       String
+  weekNumber      Int               
+  focusArea       String
+  weeklyGoal      String
+  expectedOutcome String
+  parentAdvice    String
+
+  package         IndividualPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+}
+
+model ExerciseCategory {
+  id        String     @id @default(uuid())
+  name      String     
+  code      String     @unique
+  icon      String?
+  exercises Exercise[]
+}
+
+model Exercise {
+  id                 String                @id @default(uuid())
+  categoryId         String
+  conditionId        String?
+  title              String
+  objective          String
+  durationMinutes    Int                   @default(15)
+  materialsNeeded    String?
+  stepsJson          String                
+  parentGuidance     String
+  safetyPrecautions  String?
+  ageMinMonths       Int                   @default(0)
+  ageMaxMonths       Int                   @default(216)
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+
+  category           ExerciseCategory      @relation(fields: [categoryId], references: [id])
+  condition          ConditionOrDiagnosis? @relation(fields: [conditionId], references: [id])
+  childExercises     ChildExercise[]
+  dailyTasks         DailyTask[]
+}
+
+model ChildExercise {
+  id           String            @id @default(uuid())
+  childId      String
+  packageId    String
+  exerciseId   String
+  scheduledDay Int               @default(1) 
+  isCompleted  Boolean           @default(false)
+
+  child        Child             @relation(fields: [childId], references: [id], onDelete: Cascade)
+  package      IndividualPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  exercise     Exercise          @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+}
+
+model DailyTask {
+  id              String            @id @default(uuid())
+  packageId       String
+  dayNumber       Int               
+  exerciseId      String?
+  title           String
+  durationMinutes Int               @default(15)
+  materials       String?
+  instructions    String
+  parentTip       String
+  targetBehavior  String?
+
+  package         IndividualPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  exercise        Exercise?         @relation(fields: [exerciseId], references: [id])
+  results         DailyTaskResult[]
+}
+
+model DailyTaskResult {
+  id              String    @id @default(uuid())
+  taskId          String
+  childId         String
+  date            DateTime  @default(now())
+  status          String    
+  assistanceLevel Int       @default(0) 
+  childReaction   String    
+  durationSpent   Int       @default(15)
+  parentNotes     String?
+  createdAt       DateTime  @default(now())
+
+  task            DailyTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  child           Child     @relation(fields: [childId], references: [id], onDelete: Cascade)
+
+  @@index([childId, date])
+}
+
+model TherapySession {
+  id              String            @id @default(uuid())
+  childId         String
+  specialistId    String
+  sessionDate     DateTime          @default(now())
+  durationMinutes Int               @default(45)
+  notes           String
+  outcomes        String?
+
+  child           Child             @relation(fields: [childId], references: [id], onDelete: Cascade)
+  specialist      SpecialistProfile @relation(fields: [specialistId], references: [id], onDelete: Cascade)
+}
+
+model SpeechLog {
+  id                String   @id @default(uuid())
+  childId           String
+  wordUttered       String
+  context           String?
+  communicationMode String   @default("VERBAL") 
+  promptLevel       Int      @default(0) 
+  timestamp         DateTime @default(now())
+
+  child             Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
+}
+
+model BehaviorLog {
+  id                   String   @id @default(uuid())
+  childId              String
+  timestamp            DateTime @default(now())
+  situation            String   
+  behaviorDescription  String   
+  antecedent           String   
+  parentResponse       String   
+  outcome              String   
+  severity             String   @default("MILD") 
+  possibleTriggers     String?  
+  aiSuggestedStrategy  String?  
+
+  child                Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
+
+  @@index([childId, timestamp])
+}
+
+model AacCategory {
+  id         String    @id @default(uuid())
+  name       String    
+  code       String    @unique
+  orderIndex Int       @default(0)
+  color      String    @default("#3B82F6")
+  cards      AacCard[]
+}
+
+model AacCard {
+  id          String      @id @default(uuid())
+  categoryId  String
+  label       String      
+  labelRu     String?
+  labelEn     String?
+  iconName    String?     
+  imageUrl    String?
+  audioKey    String?     
+  orderIndex  Int         @default(0)
+  isSystem    Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+
+  category    AacCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+}
+
+model ChildAacBoard {
+  id          String   @id @default(uuid())
+  childId     String
+  name        String   @default("Mening doskam")
+  cardIdsJson String   
+  isDefault   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  child       Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
+}
+
+model ProgressRecord {
+  id         String            @id @default(uuid())
+  childId    String
+  date       DateTime          @default(now())
+  domainId   String
+  score      Float
+  metricType String            @default("ASSESSMENT_SCORE")
+  notes      String?
+
+  child      Child             @relation(fields: [childId], references: [id], onDelete: Cascade)
+  domain     DevelopmentDomain @relation(fields: [domainId], references: [id], onDelete: Cascade)
+}
+
+model ProgressReport {
+  id                  String   @id @default(uuid())
+  childId             String
+  periodStart         DateTime
+  periodEnd           DateTime
+  generatedAt         DateTime @default(now())
+  summaryJson         String
+  recommendationsJson String
+  isApproved          Boolean  @default(false)
+
+  child               Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
+}
+
+model SpecialistReview {
+  id                String            @id @default(uuid())
+  packageId         String
+  specialistId      String
+  reviewType        String            @default("PACKAGE_APPROVAL") 
+  comments          String?
+  modificationsJson String?
+  status            String            
+  reviewedAt        DateTime          @default(now())
+
+  package           IndividualPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  specialist        SpecialistProfile @relation(fields: [specialistId], references: [id], onDelete: Cascade)
+}
+
+model Appointment {
+  id           String            @id @default(uuid())
+  childId      String
+  specialistId String
+  scheduledAt  DateTime
+  status       String            @default("SCHEDULED") 
+  location     String?           
+  notes        String?
+  createdAt    DateTime          @default(now())
+
+  child        Child             @relation(fields: [childId], references: [id], onDelete: Cascade)
+  specialist   SpecialistProfile @relation(fields: [specialistId], references: [id], onDelete: Cascade)
+}
+
+model Message {
+  id          String   @id @default(uuid())
+  senderId    String
+  recipientId String
+  childId     String?
+  content     String
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  sender      User     @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  recipient   User     @relation("ReceivedMessages", fields: [recipientId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  title     String
+  message   String
+  type      String   @default("INFO") 
+  linkUrl   String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+}
+
+model EducationalMaterial {
+  id         String   @id @default(uuid())
+  title      String
+  category   String   
+  targetRole String   @default("ALL") 
+  content    String
+  tags       String?
+  createdAt  DateTime @default(now())
+}
+
+model Video {
+  id              String   @id @default(uuid())
+  title           String
+  url             String
+  description     String?
+  category        String
+  durationSeconds Int      @default(0)
+  createdAt       DateTime @default(now())
+}
+
+model Document {
+  id           String   @id @default(uuid())
+  childId      String
+  title        String
+  fileUrl      String
+  fileType     String   
+  uploadedById String
+  createdAt    DateTime @default(now())
+
+  child        Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
+}
+
+model Consent {
+  id           String    @id @default(uuid())
+  childId      String
+  parentUserId String
+  consentType  String    @default("DATA_PROCESSING_AND_AI_ASSISTANCE")
+  consentText  String
+  version      String    @default("1.0")
+  ipAddress    String?
+  userAgent    String?
+  isGranted    Boolean   @default(true)
+  grantedAt    DateTime  @default(now())
+  revokedAt    DateTime?
+
+  child        Child     @relation(fields: [childId], references: [id], onDelete: Cascade)
+  parentUser   User      @relation(fields: [parentUserId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  userId      String?
+  action      String   
+  entity      String
+  entityId    String?
+  detailsJson String?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+model SystemSetting {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  value       String
+  description String?
+  updatedAt   DateTime @updatedAt
+}
+
+model AiRequest {
+  id            String       @id @default(uuid())
+  childId       String?
+  endpoint      String       
+  promptVersion String       @default("2026.09.v1")
+  inputDataJson String
+  createdAt     DateTime     @default(now())
+
+  child         Child?       @relation(fields: [childId], references: [id], onDelete: SetNull)
+  response      AiResponse?
+}
+
+model AiResponse {
+  id             String             @id @default(uuid())
+  requestId      String             @unique
+  outputDataJson String
+  modelUsed      String             @default("mehr-clinical-ai-v1")
+  tokensUsed     Int                @default(0)
+  latencyMs      Int                @default(0)
+  createdAt      DateTime           @default(now())
+
+  request        AiRequest          @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  recommendations AiRecommendation[]
+  feedbacks      AiFeedback[]
+}
+
+model AiRecommendation {
+  id                 String     @id @default(uuid())
+  responseId         String
+  category           String     
+  priority           String     @default("MEDIUM") 
+  recommendationText String
+  status             String     @default("ACTIVE") 
+
+  response           AiResponse @relation(fields: [responseId], references: [id], onDelete: Cascade)
+}
+
+model AiFeedback {
+  id         String     @id @default(uuid())
+  responseId String
+  userId     String
+  rating     Int        
+  comments   String?
+  createdAt  DateTime   @default(now())
+
+  response   AiResponse @relation(fields: [responseId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model OfflineSyncQueue {
+  id               String    @id @default(uuid())
+  clientMutationId String    @unique
+  userId           String
+  entityType       String    
+  action           String    
+  payloadJson      String
+  status           String    @default("PENDING") 
+  error            String?
+  syncedAt         DateTime?
+  createdAt        DateTime  @default(now())
+
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+}

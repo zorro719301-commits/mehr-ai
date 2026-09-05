@@ -1,0 +1,16 @@
+{
+  "short_name": "MEHR AI",
+  "name": "MEHR AI — Bolalar Rivojlantirish va Reabilitatsiya Platformasi",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "192x192 512x512"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#F8FAFC",
+  "theme_color": "#0C80FA",
+  "display": "standalone",
+  "orientation": "portrait"
+}
