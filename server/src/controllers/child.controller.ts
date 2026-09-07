@@ -96,18 +96,35 @@ export const createChild = async (req: AuthenticatedRequest, res: Response) => {
     const userId = req.user?.userId;
     const {
       firstName,
+      middleName,
       lastName,
       dateOfBirth,
       gender,
       region,
+      school,
+      grade,
+      contactPhone,
+      contactAddress,
       photoUrl,
       chiefComplaint,
+      diagnosisDate,
       conditionIds = [],
       doctorConclusions,
+      previousTreatment,
       priorTherapy,
+      surgicalHistory,
       currentMedications,
       allergies,
       precautionsContraindications,
+      epilepsy,
+      vision,
+      hearing,
+      swallowing,
+      sleep,
+      pain,
+      nutrition,
+      orthosis,
+      assistiveDevices,
       consentAgreed,
     } = req.body;
 
@@ -129,10 +146,15 @@ export const createChild = async (req: AuthenticatedRequest, res: Response) => {
     const child = await prisma.child.create({
       data: {
         firstName,
+        middleName,
         lastName,
         dateOfBirth: new Date(dateOfBirth),
         gender,
         region,
+        school,
+        grade,
+        contactPhone,
+        contactAddress,
         photoUrl,
         chiefComplaint,
         parents: parentProfile
@@ -147,16 +169,28 @@ export const createChild = async (req: AuthenticatedRequest, res: Response) => {
         medicalProfile: {
           create: {
             doctorConclusions,
+            previousTreatment,
             priorTherapy,
+            surgicalHistory,
             currentMedications,
             allergies,
             precautionsContraindications,
+            epilepsy,
+            vision,
+            hearing,
+            swallowing,
+            sleep,
+            pain,
+            nutrition,
+            orthosis,
+            assistiveDevices,
           },
         },
         conditions: {
           create: conditionIds.map((cId: string) => ({
             conditionId: cId,
             severity: 'MODERATE',
+            diagnosedDate: diagnosisDate ? new Date(diagnosisDate) : undefined,
           })),
         },
         consents: {
@@ -188,32 +222,48 @@ export const updateMedicalProfile = async (req: AuthenticatedRequest, res: Respo
     const { childId } = req.params;
     const {
       doctorConclusions,
+      previousTreatment,
       priorTherapy,
+      surgicalHistory,
       currentMedications,
       allergies,
       pastMedicalConditions,
       precautionsContraindications,
+      epilepsy,
+      vision,
+      hearing,
+      swallowing,
+      sleep,
+      pain,
+      nutrition,
+      orthosis,
+      assistiveDevices,
     } = req.body;
+
+    const data = {
+      doctorConclusions,
+      previousTreatment,
+      priorTherapy,
+      surgicalHistory,
+      currentMedications,
+      allergies,
+      pastMedicalConditions,
+      precautionsContraindications,
+      epilepsy,
+      vision,
+      hearing,
+      swallowing,
+      sleep,
+      pain,
+      nutrition,
+      orthosis,
+      assistiveDevices,
+    };
 
     const medicalProfile = await prisma.childMedicalProfile.upsert({
       where: { childId },
-      update: {
-        doctorConclusions,
-        priorTherapy,
-        currentMedications,
-        allergies,
-        pastMedicalConditions,
-        precautionsContraindications,
-      },
-      create: {
-        childId,
-        doctorConclusions,
-        priorTherapy,
-        currentMedications,
-        allergies,
-        pastMedicalConditions,
-        precautionsContraindications,
-      },
+      update: data,
+      create: { childId, ...data },
     });
 
     return res.json({ success: true, data: medicalProfile });

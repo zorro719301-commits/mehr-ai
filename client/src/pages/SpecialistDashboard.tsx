@@ -20,8 +20,12 @@ import {
 import { clinicalStore, StoredChild, MedicationOrder } from '../services/clinicalStore.js';
 import { DoctorMedicationPrescriptionModal } from '../components/DoctorMedicationPrescriptionModal.js';
 
-export const SpecialistDashboard: React.FC = () => {
-  const { user } = useAuth();
+interface SpecialistDashboardProps {
+  onNavigate?: (tab: string) => void;
+}
+
+export const SpecialistDashboard: React.FC<SpecialistDashboardProps> = ({ onNavigate }) => {
+  const { user, setActiveChild } = useAuth();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -92,16 +96,30 @@ export const SpecialistDashboard: React.FC = () => {
           </p>
         </div>
 
-        <button
-          onClick={() => {
-            setSelectedChildForMed(childrenList[0]?.id || 'child-madina');
-            setIsPrescriptionModalOpen(true);
-          }}
-          className="px-5 py-3 rounded-2xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs shadow-card flex items-center space-x-2 transition-all cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Yangi Dori Retsepti Kiritish</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-2.5">
+          {onNavigate && (
+            <button
+              onClick={() => {
+                setActiveChild(null);
+                onNavigate('assessment');
+              }}
+              className="px-4 py-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs shadow-card flex items-center space-x-1.5 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+            >
+              <span>➕ Bolani ro‘yxatdan o‘tkazish</span>
+            </button>
+          )}
+
+          <button
+            onClick={() => {
+              setSelectedChildForMed(childrenList[0]?.id || 'child-madina');
+              setIsPrescriptionModalOpen(true);
+            }}
+            className="px-4 py-3 rounded-2xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs shadow-card flex items-center space-x-1.5 transition-all cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Dori Retsepti Kiritish</span>
+          </button>
+        </div>
       </div>
 
       {/* Metrics Row */}

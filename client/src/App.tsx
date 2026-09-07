@@ -29,13 +29,20 @@ const MainApp: React.FC = () => {
     if (user && currentTab === 'login') {
       if (role === 'SPECIALIST') {
         setCurrentTab('specialist');
-      } else if (role === 'ADMIN') {
+      } else if (role === 'SUPER_ADMIN' || role === 'MEDICAL_ADMIN' || role === 'AUDITOR') {
         setCurrentTab('admin');
       } else {
         setCurrentTab('dashboard');
       }
     }
   }, [user, role, currentTab]);
+
+  // Route protection: if user is not authenticated and attempts to access protected tabs, redirect to login
+  React.useEffect(() => {
+    if (!user && currentTab !== 'landing' && currentTab !== 'login') {
+      setCurrentTab('login');
+    }
+  }, [user, currentTab]);
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 selection:bg-brand-500 selection:text-white">
@@ -58,13 +65,13 @@ const MainApp: React.FC = () => {
         {currentTab === 'aac' && <AacPage />}
         {currentTab === 'behavior' && <BehaviorDiaryPage />}
         {currentTab === 'progress' && <ProgressPage />}
-        {currentTab === 'specialist' && <SpecialistDashboard />}
+        {currentTab === 'specialist' && <SpecialistDashboard onNavigate={setCurrentTab} />}
         {currentTab === 'admin' && <AdminPage />}
         {currentTab === 'login' && (
           <AuthPage
             onSuccess={() => {
               if (role === 'SPECIALIST') setCurrentTab('specialist');
-              else if (role === 'ADMIN') setCurrentTab('admin');
+              else if (role === 'SUPER_ADMIN' || role === 'MEDICAL_ADMIN' || role === 'AUDITOR') setCurrentTab('admin');
               else setCurrentTab('dashboard');
             }}
           />

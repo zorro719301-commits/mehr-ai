@@ -25,8 +25,9 @@ export const verifyChildAccess = async (req: AuthenticatedRequest, res: Response
       return res.status(401).json({ success: false, error: 'Avtorizatsiya zarur' });
     }
 
-    // Admins and Specialists have broad clinical access
-    if (req.user.role === 'ADMIN' || req.user.role === 'SPECIALIST') {
+    // Admin-tier, specialist and auditor roles have broad clinical (read) access
+    const broadAccessRoles = ['SUPER_ADMIN', 'MEDICAL_ADMIN', 'SPECIALIST', 'AUDITOR'];
+    if (broadAccessRoles.includes(req.user.role)) {
       return next();
     }
 

@@ -39,7 +39,7 @@ router.get('/assessments/child/:childId', authenticate, verifyChildAccess, asses
 router.post('/packages/generate', authenticate, logAudit('GENERATE_PACKAGE', 'IndividualPackage'), packageCtrl.generateAiPackage);
 router.get('/packages/active/:childId', authenticate, verifyChildAccess, packageCtrl.getActivePackage);
 router.post('/packages/tasks/:taskId/result', authenticate, logAudit('RECORD_TASK_RESULT', 'DailyTaskResult'), packageCtrl.recordDailyTaskResult);
-router.post('/packages/:packageId/review', authenticate, authorize(['SPECIALIST', 'ADMIN']), logAudit('REVIEW_PACKAGE', 'SpecialistReview'), packageCtrl.reviewPackage);
+router.post('/packages/:packageId/review', authenticate, authorize(['SPECIALIST', 'SUPER_ADMIN', 'MEDICAL_ADMIN']), logAudit('REVIEW_PACKAGE', 'SpecialistReview'), packageCtrl.reviewPackage);
 
 // 5. AAC Communication routes
 router.get('/aac/cards', authenticate, aacCtrl.getAacCategoriesAndCards);
@@ -55,16 +55,19 @@ router.get('/behavior/child/:childId', authenticate, verifyChildAccess, behavior
 router.get('/progress/child/:childId', authenticate, verifyChildAccess, progressCtrl.getChildProgress);
 
 // 8. Specialist Dashboard routes
-router.get('/specialist/dashboard', authenticate, authorize(['SPECIALIST', 'ADMIN']), specialistCtrl.getSpecialistDashboard);
+router.get('/specialist/dashboard', authenticate, authorize(['SPECIALIST', 'SUPER_ADMIN', 'MEDICAL_ADMIN', 'AUDITOR']), specialistCtrl.getSpecialistDashboard);
 router.post('/specialist/sessions', authenticate, authorize(['SPECIALIST']), specialistCtrl.logTherapySession);
 
 // 9. Admin routes
-router.get('/admin/metrics', authenticate, authorize(['ADMIN']), adminCtrl.getAdminMetrics);
+router.get('/admin/metrics', authenticate, authorize(['SUPER_ADMIN', 'MEDICAL_ADMIN', 'AUDITOR']), adminCtrl.getAdminMetrics);
 router.get('/admin/conditions', authenticate, adminCtrl.getConditions);
-router.post('/admin/conditions', authenticate, authorize(['ADMIN']), adminCtrl.createCondition);
-router.put('/admin/conditions/:id', authenticate, authorize(['ADMIN']), adminCtrl.updateCondition);
-router.get('/admin/audit-logs', authenticate, authorize(['ADMIN']), adminCtrl.getAuditLogs);
-router.get('/admin/ai-logs', authenticate, authorize(['ADMIN']), adminCtrl.getAiLogs);
+router.post('/admin/conditions', authenticate, authorize(['SUPER_ADMIN', 'MEDICAL_ADMIN']), adminCtrl.createCondition);
+router.put('/admin/conditions/:id', authenticate, authorize(['SUPER_ADMIN', 'MEDICAL_ADMIN']), adminCtrl.updateCondition);
+router.get('/admin/audit-logs', authenticate, authorize(['SUPER_ADMIN', 'MEDICAL_ADMIN', 'AUDITOR']), adminCtrl.getAuditLogs);
+router.get('/admin/ai-logs', authenticate, authorize(['SUPER_ADMIN', 'MEDICAL_ADMIN', 'AUDITOR']), adminCtrl.getAiLogs);
+router.get('/admin/users', authenticate, authorize(['SUPER_ADMIN', 'MEDICAL_ADMIN']), adminCtrl.getUsers);
+router.post('/admin/users', authenticate, authorize(['SUPER_ADMIN']), logAudit('CREATE_STAFF_USER', 'User'), adminCtrl.createStaffUser);
+router.get('/admin/specialist-types', authenticate, adminCtrl.getSpecialistTypes);
 
 // 10. Offline PWA Batch Sync route
 router.post('/sync', authenticate, syncCtrl.batchSync);
@@ -78,6 +81,6 @@ router.post('/ai/chat', authenticate, aiCtrl.chatAssistant);
 
 // 12. PDF/JSON Report routes
 router.get('/reports/parent/:childId', authenticate, verifyChildAccess, reportCtrl.getParentReport);
-router.get('/reports/specialist/:childId', authenticate, authorize(['SPECIALIST', 'ADMIN']), reportCtrl.getSpecialistReport);
+router.get('/reports/specialist/:childId', authenticate, authorize(['SPECIALIST', 'SUPER_ADMIN', 'MEDICAL_ADMIN', 'AUDITOR']), reportCtrl.getSpecialistReport);
 
 export default router;

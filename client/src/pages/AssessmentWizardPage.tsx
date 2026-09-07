@@ -108,26 +108,35 @@ export const AssessmentWizardPage: React.FC<AssessmentWizardPageProps> = ({ onNa
   const [loading, setLoading] = useState(false);
   const [domains, setDomains] = useState<any[]>([]);
 
-  // Selected Diagnosis
-  const [selectedDiagnosis, setSelectedDiagnosis] = useState<string>('MKB_F84');
+  // Selected Diagnosis - primary focus MKB_F70_G80
+  const [selectedDiagnosis, setSelectedDiagnosis] = useState<string>('MKB_F70_G80');
 
-  // Step 1: General Info
-  const [firstName, setFirstName] = useState(activeChild?.firstName || 'Jasur');
-  const [lastName, setLastName] = useState(activeChild?.lastName || 'Karimov');
+  // Step 1: General Info (Starts clean for new child registration)
+  const [firstName, setFirstName] = useState(activeChild?.firstName || '');
+  const [middleName, setMiddleName] = useState(activeChild?.middleName || '');
+  const [lastName, setLastName] = useState(activeChild?.lastName || '');
   const [dateOfBirth, setDateOfBirth] = useState(
-    activeChild?.dateOfBirth ? new Date(activeChild.dateOfBirth).toISOString().split('T')[0] : '2022-04-15'
+    activeChild?.dateOfBirth ? new Date(activeChild.dateOfBirth).toISOString().split('T')[0] : '2021-08-20'
   );
-  const [gender, setGender] = useState(activeChild?.gender || 'MALE');
+  const [gender, setGender] = useState(activeChild?.gender || 'FEMALE');
   const [region, setRegion] = useState(activeChild?.region || 'Toshkent shahar');
+  const [school, setSchool] = useState(activeChild?.school || '');
+  const [grade, setGrade] = useState(activeChild?.grade || '');
+  const [contactPhone, setContactPhone] = useState(activeChild?.contactPhone || '');
+  const [contactAddress, setContactAddress] = useState(activeChild?.contactAddress || '');
   const [chiefComplaint, setChiefComplaint] = useState(
-    activeChild?.chiefComplaint || 'Ismiga qaramaydi, o‘z ehtiyojini so‘z bilan aytolmaydi, ko‘z bilan aloqa juda qisqa.'
+    activeChild?.chiefComplaint || 'Oyoq va qo‘llarda spastiklik, tayanchsiz o‘tirolmaslik (GMFCS III-IV), yengil kognitiv kechikish (F70).'
   );
+  const [diagnosisDate, setDiagnosisDate] = useState('');
   const [consentAgreed, setConsentAgreed] = useState(true);
 
   // Step 2: Medical Profile
   const [doctorConclusions, setDoctorConclusions] = useState(
-    activeChild?.medicalProfile?.doctorConclusions || 'MKB-10 F84: Bolalar autizmi (Autizm Spektri Buzilishi / ASD).'
+    activeChild?.medicalProfile?.doctorConclusions || 'MKB-10 F70 (Aqliy zaiflikning yengil darajasi) va MKB-10 G80 (Tserebral falaj III-IV daraja, spastik diplegiya).'
   );
+  const [previousTreatment, setPreviousTreatment] = useState(activeChild?.medicalProfile?.previousTreatment || '');
+  const [priorTherapy, setPriorTherapy] = useState(activeChild?.medicalProfile?.priorTherapy || '');
+  const [surgicalHistory, setSurgicalHistory] = useState(activeChild?.medicalProfile?.surgicalHistory || 'Operatsiya bo‘lmagan');
   const [currentMedications, setCurrentMedications] = useState(
     activeChild?.medicalProfile?.currentMedications || 'Magne B6 kursi'
   );
@@ -137,6 +146,15 @@ export const AssessmentWizardPage: React.FC<AssessmentWizardPageProps> = ({ onNa
   const [precautionsContraindications, setPrecautionsContraindications] = useState(
     activeChild?.medicalProfile?.precautionsContraindications || 'Baland shovqinli stimullardan ehtiyot bo‘lish'
   );
+  const [epilepsy, setEpilepsy] = useState(activeChild?.medicalProfile?.epilepsy || 'Yo‘q');
+  const [vision, setVision] = useState(activeChild?.medicalProfile?.vision || 'Me’yorda');
+  const [hearing, setHearing] = useState(activeChild?.medicalProfile?.hearing || 'Me’yorda');
+  const [swallowing, setSwallowing] = useState(activeChild?.medicalProfile?.swallowing || 'Me’yorda');
+  const [sleep, setSleep] = useState(activeChild?.medicalProfile?.sleep || '');
+  const [pain, setPain] = useState(activeChild?.medicalProfile?.pain || 'Yo‘q');
+  const [nutrition, setNutrition] = useState(activeChild?.medicalProfile?.nutrition || '');
+  const [orthosis, setOrthosis] = useState(activeChild?.medicalProfile?.orthosis || 'Talab qilinmaydi');
+  const [assistiveDevices, setAssistiveDevices] = useState(activeChild?.medicalProfile?.assistiveDevices || '');
 
   // Xalqaro Funksional Tasniflar (GMFCS, MACS, CFCS)
   const [gmfcsLevel, setGmfcsLevel] = useState<string>((activeChild as any)?.gmfcsLevel || 'III');
@@ -239,15 +257,36 @@ export const AssessmentWizardPage: React.FC<AssessmentWizardPageProps> = ({ onNa
       if (!childId) {
         const childRes = await api.post('/api/children', {
           firstName,
+          middleName,
           lastName,
           dateOfBirth,
           gender,
           region,
+          school,
+          grade,
+          contactPhone,
+          contactAddress,
           chiefComplaint,
+          diagnosisDate,
           doctorConclusions,
+          previousTreatment,
+          priorTherapy,
+          surgicalHistory,
           currentMedications,
           allergies,
           precautionsContraindications,
+          epilepsy,
+          vision,
+          hearing,
+          swallowing,
+          sleep,
+          pain,
+          nutrition,
+          orthosis,
+          assistiveDevices,
+          gmfcsLevel,
+          macsLevel,
+          cfcsLevel,
           conditions: [selectedDiagnosis],
           consentAgreed,
         });
@@ -392,10 +431,10 @@ export const AssessmentWizardPage: React.FC<AssessmentWizardPageProps> = ({ onNa
               <label className="text-xs font-bold text-slate-700">Bolaning ismi *</label>
               <input
                 type="text"
-                className="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:bg-white focus:border-brand-500"
+                className="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:bg-white focus:border-brand-500 font-medium"
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
-                placeholder="Jasur"
+                placeholder="Ismni kiriting (masalan: Madina yoki Jasur)"
               />
             </div>
 
@@ -403,10 +442,21 @@ export const AssessmentWizardPage: React.FC<AssessmentWizardPageProps> = ({ onNa
               <label className="text-xs font-bold text-slate-700">Familiyasi *</label>
               <input
                 type="text"
-                className="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:bg-white focus:border-brand-500"
+                className="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:bg-white focus:border-brand-500 font-medium"
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
-                placeholder="Karimov"
+                placeholder="Familiyani kiriting (masalan: Karimova)"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-slate-700">Sharifi (otasining ismi)</label>
+              <input
+                type="text"
+                className="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:bg-white focus:border-brand-500"
+                value={middleName}
+                onChange={(e) => setMiddleName(e.target.value)}
+                placeholder="Alisherovich"
               />
             </div>
 
@@ -440,6 +490,60 @@ export const AssessmentWizardPage: React.FC<AssessmentWizardPageProps> = ({ onNa
                 value={region}
                 onChange={(e) => setRegion(e.target.value)}
                 placeholder="Toshkent shahar, Chilonzor tumani"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-slate-700">Maktab</label>
+              <input
+                type="text"
+                className="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:bg-white focus:border-brand-500"
+                value={school}
+                onChange={(e) => setSchool(e.target.value)}
+                placeholder="Maktabgacha / 25-maktab"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-slate-700">Sinf</label>
+              <input
+                type="text"
+                className="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:bg-white focus:border-brand-500"
+                value={grade}
+                onChange={(e) => setGrade(e.target.value)}
+                placeholder="1-sinf"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-slate-700">Aloqa telefoni</label>
+              <input
+                type="text"
+                className="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:bg-white focus:border-brand-500"
+                value={contactPhone}
+                onChange={(e) => setContactPhone(e.target.value)}
+                placeholder="+998 90 123 45 67"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-slate-700">Yashash manzili</label>
+              <input
+                type="text"
+                className="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:bg-white focus:border-brand-500"
+                value={contactAddress}
+                onChange={(e) => setContactAddress(e.target.value)}
+                placeholder="Ko‘cha, uy raqami"
+              />
+            </div>
+
+            <div className="sm:col-span-2 space-y-1">
+              <label className="text-xs font-bold text-slate-700">Tashxis qo‘yilgan sana</label>
+              <input
+                type="date"
+                className="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:bg-white focus:border-brand-500"
+                value={diagnosisDate}
+                onChange={(e) => setDiagnosisDate(e.target.value)}
               />
             </div>
 
@@ -505,6 +609,41 @@ export const AssessmentWizardPage: React.FC<AssessmentWizardPageProps> = ({ onNa
               />
             </div>
 
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-700">Oldingi davolash</label>
+                <textarea
+                  rows={2}
+                  className="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:bg-white focus:border-brand-500"
+                  value={previousTreatment}
+                  onChange={(e) => setPreviousTreatment(e.target.value)}
+                  placeholder="Avval qanday davolanish olingan..."
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-700">Oldingi reabilitatsiya</label>
+                <textarea
+                  rows={2}
+                  className="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:bg-white focus:border-brand-500"
+                  value={priorTherapy}
+                  onChange={(e) => setPriorTherapy(e.target.value)}
+                  placeholder="Avvalgi reabilitatsiya dasturlari..."
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-slate-700">Operatsiyalar</label>
+              <input
+                type="text"
+                className="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:bg-white focus:border-brand-500"
+                value={surgicalHistory}
+                onChange={(e) => setSurgicalHistory(e.target.value)}
+                placeholder="Operatsiya bo‘lmagan / operatsiya turi va sanasi"
+              />
+            </div>
+
             <div className="space-y-1">
               <label className="text-xs font-bold text-slate-700">Qabul qilinayotgan dori-darmonlar (shifokor tasdiqlagan)</label>
               <input
@@ -534,6 +673,105 @@ export const AssessmentWizardPage: React.FC<AssessmentWizardPageProps> = ({ onNa
                 onChange={(e) => setPrecautionsContraindications(e.target.value)}
                 placeholder="Masalan: bo‘yinni keskin bukish taqiqlanadi, shovqindan bezovtalanadi..."
               />
+            </div>
+
+            {/* Functional Status Checklist */}
+            <div className="pt-4 border-t border-slate-100 space-y-3">
+              <h4 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
+                Funksional Holat
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-700">Epilepsiya</label>
+                  <input
+                    type="text"
+                    className="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:bg-white focus:border-brand-500"
+                    value={epilepsy}
+                    onChange={(e) => setEpilepsy(e.target.value)}
+                    placeholder="Yo‘q / turi va chastotasi"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-700">Ko‘rish</label>
+                  <input
+                    type="text"
+                    className="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:bg-white focus:border-brand-500"
+                    value={vision}
+                    onChange={(e) => setVision(e.target.value)}
+                    placeholder="Me’yorda / buzilish tavsifi"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-700">Eshitish</label>
+                  <input
+                    type="text"
+                    className="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:bg-white focus:border-brand-500"
+                    value={hearing}
+                    onChange={(e) => setHearing(e.target.value)}
+                    placeholder="Me’yorda / buzilish tavsifi"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-700">Yutish</label>
+                  <input
+                    type="text"
+                    className="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:bg-white focus:border-brand-500"
+                    value={swallowing}
+                    onChange={(e) => setSwallowing(e.target.value)}
+                    placeholder="Me’yorda / qiyinchilik tavsifi"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-700">Uyqu</label>
+                  <input
+                    type="text"
+                    className="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:bg-white focus:border-brand-500"
+                    value={sleep}
+                    onChange={(e) => setSleep(e.target.value)}
+                    placeholder="Uyqu rejimi va muammolari"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-700">Og‘riq</label>
+                  <input
+                    type="text"
+                    className="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:bg-white focus:border-brand-500"
+                    value={pain}
+                    onChange={(e) => setPain(e.target.value)}
+                    placeholder="Yo‘q / joyi va xarakteri"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-700">Ovqatlanish</label>
+                  <input
+                    type="text"
+                    className="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:bg-white focus:border-brand-500"
+                    value={nutrition}
+                    onChange={(e) => setNutrition(e.target.value)}
+                    placeholder="Ovqatlanish tartibi va cheklovlar"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-700">Ortoz</label>
+                  <input
+                    type="text"
+                    className="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:bg-white focus:border-brand-500"
+                    value={orthosis}
+                    onChange={(e) => setOrthosis(e.target.value)}
+                    placeholder="Talab qilinmaydi / ortoz turi"
+                  />
+                </div>
+                <div className="sm:col-span-2 space-y-1">
+                  <label className="text-xs font-bold text-slate-700">Assistiv qurilmalar</label>
+                  <input
+                    type="text"
+                    className="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:bg-white focus:border-brand-500"
+                    value={assistiveDevices}
+                    onChange={(e) => setAssistiveDevices(e.target.value)}
+                    placeholder="Aravacha, xodunok, AAC qurilmasi va h.k."
+                  />
+                </div>
+              </div>
             </div>
 
             {/* Standardized Functional Classifications (GMFCS, MACS, CFCS) */}
@@ -899,22 +1137,32 @@ export const AssessmentWizardPage: React.FC<AssessmentWizardPageProps> = ({ onNa
             </div>
 
             {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-100">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-slate-100">
               <button
                 onClick={() => window.print()}
-                className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center justify-center space-x-2"
+                className="w-full sm:w-auto px-5 py-3.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center justify-center space-x-2 cursor-pointer"
               >
                 <Printer className="w-4 h-4" />
                 <span>PDF / Chop etish</span>
               </button>
 
-              <button
-                onClick={() => onNavigate('dashboard')}
-                className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-brand-600 hover:bg-brand-700 text-white font-extrabold text-sm shadow-card flex items-center justify-center space-x-2"
-              >
-                <span>Kabinetga o‘tish va Mashg‘ulotni boshlash</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
+              <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
+                <button
+                  onClick={() => onNavigate('aac')}
+                  className="px-4 py-3.5 rounded-2xl bg-indigo-50 hover:bg-indigo-100 text-indigo-800 font-bold text-xs border border-indigo-200 flex items-center space-x-1.5 cursor-pointer"
+                >
+                  <MessageCircle className="w-4 h-4 text-indigo-600" />
+                  <span>AAC Doskasi</span>
+                </button>
+
+                <button
+                  onClick={() => onNavigate('dashboard')}
+                  className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-brand-600 to-emerald-600 hover:from-brand-500 hover:to-emerald-500 text-white font-extrabold text-xs shadow-card flex items-center justify-center space-x-2 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+                >
+                  <span>Kabinetga o‘tish (Mashg‘ulotlar & Jadval)</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           </div>
         );

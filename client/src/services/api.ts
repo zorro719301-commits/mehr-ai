@@ -74,17 +74,21 @@ class ApiService {
 
     // 1. Auth: Login
     if (endpoint === '/api/auth/login' && method === 'POST') {
-      const email = body.email;
-      let role: 'PARENT' | 'SPECIALIST' | 'ADMIN' = 'PARENT';
+      const email = (body.email || '').toLowerCase().trim();
+      let role: 'SUPER_ADMIN' | 'MEDICAL_ADMIN' | 'SPECIALIST' | 'PARENT' | 'AUDITOR' = 'PARENT';
       let fullName = 'Dilnoza Karimova';
 
-      if (email.includes('nodira') || email.includes('dr')) {
+      if (email === 'admin' || email.includes('admin')) {
+        role = 'SUPER_ADMIN';
+        fullName = 'MEHR AI Super Administrator';
+      } else if (email.includes('nodira') || email.includes('dr')) {
         role = 'SPECIALIST';
         fullName = 'Dr. Nodira Rahimova';
-      } else if (email.includes('admin')) {
-        role = 'ADMIN';
-        fullName = 'MEHR AI Administrator';
+      } else if (email.includes('dilnoza') || email.includes('parent')) {
+        role = 'PARENT';
+        fullName = 'Dilnoza Karimova';
       } else if (email.includes('alisher')) {
+        role = 'PARENT';
         fullName = 'Alisher Umarov';
       }
 
@@ -112,25 +116,49 @@ class ApiService {
       return { success: true, data: JSON.parse(stored) as any };
     }
 
-    // 3. Children list
+    // 3. Children list - requires authenticated user session
     if (endpoint === '/api/children' && method === 'GET') {
+      const stored = localStorage.getItem('mehr_current_user');
+      if (!stored) {
+        return { success: false, error: 'Avtorizatsiyadan o‘tilmagan' };
+      }
       return { success: true, data: ClinicalStore.getChildren() as any };
     }
 
-    // 4. Create child
+    // 4. Create child - registers a new child into the clinical system
     if (endpoint === '/api/children' && method === 'POST') {
+      const stored = localStorage.getItem('mehr_current_user');
+      if (!stored) {
+        return { success: false, error: 'Avtorizatsiyadan o‘tilmagan' };
+      }
       const children = ClinicalStore.getChildren();
+      const conditionCode = body.conditions?.[0] || 'MKB_F70_G80';
+      let conditionName = 'MKB-10 F70 + G80 III-IV: Yengil aqliy zaiflik + Bolalar serebral falaji';
+      if (conditionCode === 'MKB_F71') conditionName = 'MKB-10 F71: Aqliy zaiflikning o‘rta darajasi';
+      else if (conditionCode === 'MKB_F84') conditionName = 'MKB-10 F84: Bolalar autizmi (ASD)';
+      else if (conditionCode === 'MKB_H90_3') conditionName = 'MKB-10 H90.3: Orttirilgan kar-soqovlik (Koxlear implant)';
+
       const newChild = {
         id: `child-${Date.now()}`,
         firstName: body.firstName || 'Yangi bola',
+        middleName: body.middleName || '',
         lastName: body.lastName || '',
-        dateOfBirth: body.dateOfBirth || '2022-01-01',
+        dateOfBirth: body.dateOfBirth || new Date().toISOString().split('T')[0],
         gender: body.gender || 'MALE',
-        region: body.region || 'Toshkent',
-        photoUrl: 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=150',
+        region: body.region || 'Toshkent shahar',
+        school: body.school || '',
+        grade: body.grade || '',
+        contactPhone: body.contactPhone || '',
+        contactAddress: body.contactAddress || '',
+        photoUrl: body.photoUrl || (body.gender === 'FEMALE'
+          ? 'https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?w=150'
+          : 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=150'),
         chiefComplaint: body.chiefComplaint || '',
-        conditions: [{ condition: { code: 'ASD', name: 'Autizm spektri' } }],
+        conditions: [{ condition: { code: conditionCode, name: conditionName } }],
         medicalProfile: body,
+        gmfcsLevel: body.gmfcsLevel || 'III',
+        macsLevel: body.macsLevel || 'III',
+        cfcsLevel: body.cfcsLevel || 'III',
         packages: [],
         assessments: [],
       };

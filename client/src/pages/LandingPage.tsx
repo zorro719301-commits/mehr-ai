@@ -39,7 +39,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
       onNavigate('login');
     } else if (role === 'SPECIALIST') {
       onNavigate('specialist');
-    } else if (role === 'ADMIN') {
+    } else if (role === 'SUPER_ADMIN' || role === 'MEDICAL_ADMIN' || role === 'AUDITOR') {
       onNavigate('admin');
     } else {
       onNavigate('dashboard');
@@ -344,10 +344,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
               Mehrli kelajak sari birga qadam tashlaymiz
             </h3>
             <p className="text-brand-50 max-w-xl mx-auto text-sm sm:text-base">
-              Bolangiz uchun individual AI dasturini bugun boshlang — ro‘yxatdan o‘tish bir necha daqiqa vaqt oladi.
+              Bosh administrator tomonidan berilgan login-parol orqali platformaga kiring va bolangiz uchun individual reabilitatsiya dasturini boshlang.
             </p>
             <button
-              onClick={() => onNavigate(user ? 'dashboard' : 'assessment')}
+              onClick={goToPlatform}
               className="inline-flex items-center space-x-2 px-8 py-4 rounded-2xl bg-white text-brand-700 font-bold text-base shadow-xl hover:scale-[1.03] active:scale-[0.98] transition-all"
             >
               <span>{t.actions.start}</span>

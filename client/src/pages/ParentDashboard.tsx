@@ -30,7 +30,7 @@ interface ParentDashboardProps {
 }
 
 export const ParentDashboard: React.FC<ParentDashboardProps> = ({ onNavigate, onOpenAiChat }) => {
-  const { activeChild } = useAuth();
+  const { activeChild, setActiveChild } = useAuth();
   const { t } = useLanguage();
 
   const [activeTab, setActiveTab] = useState<'overview' | 'medication' | 'timeline'>('overview');
@@ -110,15 +110,25 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({ onNavigate, on
 
   if (!activeChild) {
     return (
-      <div className="text-center py-20 bg-white rounded-3xl border border-slate-200 p-8 shadow-soft">
-        <Heart className="w-12 h-12 text-brand-500 mx-auto mb-4 animate-bounce" />
-        <h3 className="text-xl font-bold text-slate-800 mb-2">Bola profili tanlanmagan</h3>
-        <p className="text-sm text-slate-500 mb-6">Yangi bola profilini kiriting yoki mavjud bolani tanlang.</p>
+      <div className="text-center py-16 bg-white rounded-3xl border border-slate-200 p-8 shadow-soft max-w-2xl mx-auto space-y-5 my-8">
+        <div className="w-16 h-16 rounded-3xl bg-brand-50 text-brand-600 flex items-center justify-center mx-auto shadow-sm">
+          <Heart className="w-8 h-8 text-brand-500 animate-pulse" />
+        </div>
+        <div className="space-y-2">
+          <h3 className="text-2xl font-extrabold text-slate-800">Farzandingiz profilini ro‘yxatdan o‘tkazing</h3>
+          <p className="text-sm text-slate-500 max-w-md mx-auto leading-relaxed">
+            MEHR AI individual reabilitatsiya dasturi, 24-soatlik parvarish jadvali va kunlik 15-daqiqalik mashg‘ulotlarni shakllantirish uchun bolaning dastlabki ma’lumotlarini kiriting.
+          </p>
+        </div>
         <button
-          onClick={() => onNavigate('assessment')}
-          className="px-6 py-3 rounded-2xl bg-brand-600 text-white font-semibold text-sm shadow-card"
+          onClick={() => {
+            setActiveChild(null);
+            onNavigate('assessment');
+          }}
+          className="inline-flex items-center space-x-2.5 px-8 py-4 rounded-2xl bg-gradient-to-r from-brand-600 to-emerald-600 hover:from-brand-500 hover:to-emerald-500 text-white font-extrabold text-sm shadow-card hover:scale-105 active:scale-95 transition-all cursor-pointer"
         >
-          Yangi bola profilini yaratish
+          <span className="text-base">➕</span>
+          <span>Bolani ro‘yxatdan o‘tkazish</span>
         </button>
       </div>
     );
@@ -182,10 +192,20 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({ onNavigate, on
         </div>
 
         {/* Action Buttons */}
-        <div className="flex flex-wrap items-center justify-center gap-3 w-full md:w-auto">
+        <div className="flex flex-wrap items-center justify-center gap-2.5 w-full md:w-auto">
+          <button
+            onClick={() => {
+              setActiveChild(null);
+              onNavigate('assessment');
+            }}
+            className="px-4 py-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs shadow-card flex items-center justify-center space-x-1.5 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+            title="Yangi bolani ro‘yxatdan o‘tkazish va AI reja shakllantirish"
+          >
+            <span>➕ Bolani ro‘yxatdan o‘tkazish</span>
+          </button>
           <button
             onClick={() => setIsVoiceAssistantOpen(true)}
-            className="px-4 py-3 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:brightness-110 text-white font-bold text-xs shadow-card flex items-center justify-center space-x-1.5"
+            className="px-3.5 py-3 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:brightness-110 text-white font-bold text-xs shadow-card flex items-center justify-center space-x-1.5"
             title="Tabiiy o‘zbek tilidagi ovozli AI yordamchi"
           >
             <Mic className="w-4 h-4 text-amber-300" />
@@ -193,13 +213,13 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({ onNavigate, on
           </button>
           <button
             onClick={() => onNavigate('assessment')}
-            className="px-4 py-3 rounded-2xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-bold text-xs shadow-sm flex items-center justify-center space-x-1.5"
+            className="px-3.5 py-3 rounded-2xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-bold text-xs shadow-sm flex items-center justify-center space-x-1.5"
           >
             <span>Qayta baholash</span>
           </button>
           <button
             onClick={onOpenAiChat}
-            className="px-4 py-3 rounded-2xl bg-gradient-to-r from-brand-600 to-emerald-600 hover:brightness-110 text-white font-bold text-xs shadow-card flex items-center justify-center space-x-1.5"
+            className="px-3.5 py-3 rounded-2xl bg-gradient-to-r from-brand-600 to-emerald-600 hover:brightness-110 text-white font-bold text-xs shadow-card flex items-center justify-center space-x-1.5"
           >
             <Sparkles className="w-4 h-4 text-amber-300 fill-amber-300" />
             <span>Chat AI</span>

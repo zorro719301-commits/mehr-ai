@@ -65,6 +65,16 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpe
                   </option>
                 ))}
               </select>
+              <button
+                onClick={() => {
+                  setActiveChild(null);
+                  setCurrentTab('assessment');
+                }}
+                className="ml-2 px-2 py-0.5 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-[11px] font-bold border border-emerald-200 flex items-center space-x-0.5 cursor-pointer transition-colors"
+                title="Yangi bolani ro‘yxatdan o‘tkazish"
+              >
+                <span>+ Ro‘yxatdan o‘tkazish</span>
+              </button>
             </div>
           )}
 
@@ -126,7 +136,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpe
                 {t.nav.progress}
               </button>
 
-              {(role === 'SPECIALIST' || role === 'ADMIN') && (
+              {(role === 'SPECIALIST' || role === 'SUPER_ADMIN' || role === 'MEDICAL_ADMIN') && (
                 <button
                   onClick={() => setCurrentTab('specialist')}
                   className={`px-3 py-1.5 rounded-xl text-sm font-medium transition-all ${
@@ -139,7 +149,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpe
                 </button>
               )}
 
-              {role === 'ADMIN' && (
+              {(role === 'SUPER_ADMIN' || role === 'MEDICAL_ADMIN' || role === 'AUDITOR') && (
                 <button
                   onClick={() => setCurrentTab('admin')}
                   className={`px-3 py-1.5 rounded-xl text-sm font-medium transition-all ${
@@ -219,9 +229,10 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpe
             ) : (
               <button
                 onClick={() => setCurrentTab('login')}
-                className="px-4 py-1.5 rounded-xl text-xs font-semibold bg-brand-600 text-white hover:bg-brand-700 shadow-sm"
+                className="flex items-center space-x-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-brand-600 to-emerald-600 hover:from-brand-500 hover:to-emerald-500 text-white shadow-card hover:scale-[1.03] active:scale-[0.98] transition-all cursor-pointer"
               >
-                {t.nav.login}
+                <Shield className="w-3.5 h-3.5" />
+                <span>{t.actions.start}</span>
               </button>
             )}
           </div>

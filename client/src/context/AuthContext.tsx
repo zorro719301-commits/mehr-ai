@@ -6,7 +6,7 @@ export interface User {
   id: string;
   email: string;
   fullName: string;
-  role: 'PARENT' | 'SPECIALIST' | 'ADMIN';
+  role: 'SUPER_ADMIN' | 'MEDICAL_ADMIN' | 'SPECIALIST' | 'PARENT' | 'AUDITOR';
   phone?: string;
   avatarUrl?: string;
   parentProfile?: any;
@@ -16,10 +16,15 @@ export interface User {
 export interface ChildSummary {
   id: string;
   firstName: string;
+  middleName?: string;
   lastName: string;
   dateOfBirth: string;
   gender: string;
   region: string;
+  school?: string;
+  grade?: string;
+  contactPhone?: string;
+  contactAddress?: string;
   photoUrl?: string;
   chiefComplaint?: string;
   conditions?: any[];
@@ -30,7 +35,7 @@ export interface ChildSummary {
 
 interface AuthContextType {
   user: User | null;
-  role: 'PARENT' | 'SPECIALIST' | 'ADMIN' | null;
+  role: 'SUPER_ADMIN' | 'MEDICAL_ADMIN' | 'SPECIALIST' | 'PARENT' | 'AUDITOR' | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   isOnline: boolean;
@@ -84,9 +89,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       } else {
         setUser(null);
+        setChildrenList([]);
+        setActiveChild(null);
       }
     } catch {
       setUser(null);
+      setChildrenList([]);
+      setActiveChild(null);
     } finally {
       setIsLoading(false);
     }

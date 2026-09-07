@@ -17,7 +17,7 @@ model User {
   passwordHash      String
   fullName          String
   phone             String?
-  role              String             @default("PARENT") // PARENT, SPECIALIST, ADMIN
+  role              String             @default("PARENT") // SUPER_ADMIN, MEDICAL_ADMIN, SPECIALIST, PARENT, AUDITOR
   avatarUrl         String?
   isActive          Boolean            @default(true)
   twoFactorEnabled  Boolean            @default(false)
@@ -136,12 +136,17 @@ model SpecialistProfile {
 model Child {
   id             String                @id @default(uuid())
   firstName      String
+  middleName     String?               // Sharif (F.I.Sh. uchun)
   lastName       String
   dateOfBirth    DateTime
   gender         String                // MALE, FEMALE
   region         String                // Toshkent, Samarqand, Farg'ona, etc.
+  school         String?               // Maktab
+  grade          String?               // Sinf
+  contactPhone   String?               // Bola bo'yicha aloqa telefoni
+  contactAddress String?               // Yashash manzili
   photoUrl       String?
-  chiefComplaint String?               // Asosiy murojaat sababi
+  chiefComplaint String?               // Asosiy murojaat sababi (shikoyatlar)
   isActive       Boolean               @default(true)
   createdAt      DateTime              @default(now())
   updatedAt      DateTime              @updatedAt
@@ -187,11 +192,22 @@ model ChildMedicalProfile {
   id                         String   @id @default(uuid())
   childId                    String   @unique
   doctorConclusions          String?  // Shifokor xulosasi
-  priorTherapy               String?  // Avvalgi davolanish/reabilitatsiya
-  currentMedications         String?  // Qabul qilinayotgan dorilar (shifokor tasdiqlagan)
+  previousTreatment          String?  // Oldingi davolash
+  priorTherapy               String?  // Oldingi reabilitatsiya
+  surgicalHistory            String?  // Operatsiyalar
+  currentMedications         String?  // Doimiy qabul qilinadigan dorilar
   allergies                  String?  // Allergiyalar
   pastMedicalConditions      String?  // Avvalgi muhim holatlar
   precautionsContraindications String? // Cheklovlar va ehtiyot choralari
+  epilepsy                   String?  // Epilepsiya
+  vision                     String?  // Ko'rish
+  hearing                    String?  // Eshitish
+  swallowing                 String?  // Yutish
+  sleep                      String?  // Uyqu
+  pain                       String?  // Og'riq
+  nutrition                  String?  // Ovqatlanish
+  orthosis                   String?  // Ortoz
+  assistiveDevices           String?  // Assistiv qurilmalar
   updatedAt                  DateTime @updatedAt
 
   child                      Child    @relation(fields: [childId], references: [id], onDelete: Cascade)

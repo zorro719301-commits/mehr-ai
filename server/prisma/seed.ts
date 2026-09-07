@@ -6,31 +6,31 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Starting MEHR AI comprehensive clinical database seeding...');
 
-  // 1. Roles and Permissions
-  const adminRole = await prisma.role.upsert({
-    where: { name: 'ADMIN' },
-    update: {},
-    create: { name: 'ADMIN', description: 'Tizim ma’muri' },
-  });
+  // 1. Roles and Permissions (16-role MEHR AI taxonomy)
+  const roleDefs = [
+    { name: 'SUPER_ADMIN', description: 'Super Admin — tizim ustidan to‘liq nazorat' },
+    { name: 'MEDICAL_ADMIN', description: 'Tibbiy administrator — klinik jarayonlar nazorati' },
+    { name: 'SPECIALIST', description: 'Klinik va reabilitatsiya mutaxassisi (barcha 11 ta mutaxassislik turi)' },
+    { name: 'PARENT', description: 'Ota-ona yoki qonuniy vasiy' },
+    { name: 'AUDITOR', description: 'Auditor — faqat o‘qish huquqiga ega foydalanuvchi' },
+  ];
+  for (const r of roleDefs) {
+    await prisma.role.upsert({ where: { name: r.name }, update: {}, create: r });
+  }
 
-  const specialistRole = await prisma.role.upsert({
-    where: { name: 'SPECIALIST' },
-    update: {},
-    create: { name: 'SPECIALIST', description: 'Klinik va reabilitatsiya mutaxassisi' },
-  });
-
-  const parentRole = await prisma.role.upsert({
-    where: { name: 'PARENT' },
-    update: {},
-    create: { name: 'PARENT', description: 'Ota-ona yoki qonuniy vasiy' },
-  });
-
-  // 2. Specialist Types
+  // 2. Specialist Types — 11 clinical professions
   const specTypes = [
-    { code: 'LOGOPED', name: 'Logoped / Defektolog', description: 'Nutq va kommunikatsiyani rivojlantirish' },
     { code: 'NEVROLOG', name: 'Bolalar nevrologi', description: 'Asab tizimi va neyrorivojlanish' },
-    { code: 'FIZIOTERAPEVT', name: 'Fizioterapevt / Ergoterapevt', description: 'Motorika va jismoniy reabilitatsiya' },
-    { code: 'PSIXOLOG', name: 'Bolalar psixologi / ABA mutaxassis', description: 'Xulq-atvor va emotsional rivojlanish' },
+    { code: 'PEDIATR', name: 'Pediatr', description: 'Bolalar umumiy sog‘ligi va rivojlanish nazorati' },
+    { code: 'REABILITOLOG', name: 'Reabilitolog', description: 'Kompleks reabilitatsiya dasturlarini boshqarish' },
+    { code: 'FIZIOTERAPEVT', name: 'Fizioterapevt / LFK mutaxassisi', description: 'Motorika va jismoniy reabilitatsiya' },
+    { code: 'ERGOTERAPEVT', name: 'Ergoterapevt', description: 'Kundalik hayot ko‘nikmalari va mustaqillik' },
+    { code: 'LOGOPED', name: 'Logoped', description: 'Nutq va kommunikatsiyani rivojlantirish' },
+    { code: 'DEFEKTOLOG', name: 'Defektolog / Maxsus pedagog', description: 'Maxsus ta’lim va rivojlantiruvchi pedagogika' },
+    { code: 'PSIXOLOG', name: 'Psixolog', description: 'Xulq-atvor va emotsional rivojlanish' },
+    { code: 'ORTOPED', name: 'Ortoped', description: 'Tayanch-harakat apparati bo‘yicha davolash' },
+    { code: 'ORTOTIST', name: 'Ortotist', description: 'Ortoz va protez vositalarini moslashtirish' },
+    { code: 'DIETOLOG', name: 'Dietolog', description: 'Ovqatlanish va oziqlanish rejasi' },
   ];
 
   const createdSpecTypes: Record<string, string> = {};
@@ -45,18 +45,18 @@ async function main() {
 
   // 3. Password hash
   const defaultPasswordHash = await bcrypt.hash('Password123!', 10);
-  const adminPasswordHash = await bcrypt.hash('AdminSecret2026!', 10);
+  const adminPasswordHash = await bcrypt.hash('852456', 10);
 
-  // 4. Users (Admin, 3 Specialists, 2 Parents)
+  // 4. Users (Super Admin, 3 Specialists, 2 Parents)
   const adminUser = await prisma.user.upsert({
-    where: { email: 'admin@mehr.uz' },
-    update: {},
+    where: { email: 'admin' },
+    update: { passwordHash: adminPasswordHash, role: 'SUPER_ADMIN' },
     create: {
-      email: 'admin@mehr.uz',
+      email: 'admin',
       passwordHash: adminPasswordHash,
-      fullName: 'MEHR AI Bosh Administrator',
+      fullName: 'MEHR AI Super Administrator',
       phone: '+998901234567',
-      role: 'ADMIN',
+      role: 'SUPER_ADMIN',
       isActive: true,
     },
   });
@@ -842,7 +842,7 @@ async function main() {
   });
 
   console.log('✅ MEHR AI database successfully seeded with rich demo data:');
-  console.log('   - Admin: admin@mehr.uz (Password: AdminSecret2026!)');
+  console.log('   - Super Admin: admin (Password: 852456)');
   console.log('   - Specialists: dr.nodira@mehr.uz, kamola.logoped@mehr.uz, sardor.fizioterapiya@mehr.uz (Password: Password123!)');
   console.log('   - Parents: dilnoza@mehr.uz, alisher@mehr.uz (Password: Password123!)');
   console.log('   - 3 Children: Jasur (ASD), Madina (CP), Timur (Down Syndrome)');
