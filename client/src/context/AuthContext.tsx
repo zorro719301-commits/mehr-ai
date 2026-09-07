@@ -42,7 +42,7 @@ interface AuthContextType {
   activeChild: ChildSummary | null;
   childrenList: ChildSummary[];
   setActiveChild: (child: ChildSummary | null) => void;
-  login: (email: string, pass: string) => Promise<boolean>;
+  login: (email: string, pass: string) => Promise<User | null>;
   logout: () => void;
   refreshUserData: () => Promise<void>;
 }
@@ -105,19 +105,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     refreshUserData();
   }, []);
 
-  const login = async (email: string, pass: string): Promise<boolean> => {
+  const login = async (email: string, pass: string): Promise<User | null> => {
     setIsLoading(true);
     try {
       const res = await api.post('/api/auth/login', { email, password: pass });
       if (res.success && res.data) {
         api.setTokens(res.data.accessToken, res.data.refreshToken);
-        setUser(res.data.user);
-        await refreshUserData();
-        return true;
+        const loggedUser = res.data.user;
+        setUser(loggedUser);
+        try {
+          const childRes = await api.get('/api/children');
+          if (childRes.success && Array.isArray(childRes.data)) {
+            setChildrenList(childRes.data);
+            if (childRes.data.length > 0) {
+              setActiveChild(childRes.data[0]);
+            }
+          }
+        } catch {}
+        return loggedUser;
       }
-      return false;
+      return null;
     } catch (e) {
-      return false;
+      return null;
     } finally {
       setIsLoading(false);
     }

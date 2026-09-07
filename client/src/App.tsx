@@ -19,30 +19,31 @@ import { AuthPage } from './pages/AuthPage.js';
 import { Sparkles, Mic } from 'lucide-react';
 
 const MainApp: React.FC = () => {
-  const { user, role } = useAuth();
+  const { user, role, isLoading } = useAuth();
   const [currentTab, setCurrentTab] = useState<string>('landing');
   const [isAiChatOpen, setIsAiChatOpen] = useState(false);
   const [isVoiceAssistantOpen, setIsVoiceAssistantOpen] = useState(false);
 
-  // If user logs in and was on 'landing' or 'login', switch to their appropriate dashboard
+  // If user logs in while on 'login', switch to their appropriate dashboard
   React.useEffect(() => {
     if (user && currentTab === 'login') {
-      if (role === 'SPECIALIST') {
+      const r = user.role;
+      if (r === 'SPECIALIST') {
         setCurrentTab('specialist');
-      } else if (role === 'SUPER_ADMIN' || role === 'MEDICAL_ADMIN' || role === 'AUDITOR') {
+      } else if (r === 'SUPER_ADMIN' || r === 'MEDICAL_ADMIN' || r === 'AUDITOR') {
         setCurrentTab('admin');
       } else {
         setCurrentTab('dashboard');
       }
     }
-  }, [user, role, currentTab]);
+  }, [user, currentTab]);
 
-  // Route protection: if user is not authenticated and attempts to access protected tabs, redirect to login
+  // Route protection: only redirect to login if not loading, not authenticated, and on a protected tab
   React.useEffect(() => {
-    if (!user && currentTab !== 'landing' && currentTab !== 'login') {
+    if (!isLoading && !user && currentTab !== 'landing' && currentTab !== 'login') {
       setCurrentTab('login');
     }
-  }, [user, currentTab]);
+  }, [isLoading, user, currentTab]);
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 selection:bg-brand-500 selection:text-white">
@@ -69,10 +70,15 @@ const MainApp: React.FC = () => {
         {currentTab === 'admin' && <AdminPage />}
         {currentTab === 'login' && (
           <AuthPage
-            onSuccess={() => {
-              if (role === 'SPECIALIST') setCurrentTab('specialist');
-              else if (role === 'SUPER_ADMIN' || role === 'MEDICAL_ADMIN' || role === 'AUDITOR') setCurrentTab('admin');
-              else setCurrentTab('dashboard');
+            onSuccess={(loggedRole) => {
+              const r = loggedRole || user?.role || role;
+              if (r === 'SPECIALIST') {
+                setCurrentTab('specialist');
+              } else if (r === 'SUPER_ADMIN' || r === 'MEDICAL_ADMIN' || r === 'AUDITOR') {
+                setCurrentTab('admin');
+              } else {
+                setCurrentTab('dashboard');
+              }
             }}
           />
         )}

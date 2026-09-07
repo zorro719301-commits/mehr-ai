@@ -42,10 +42,10 @@ export const AdminPage: React.FC = () => {
         api.get('/api/admin/ai-logs'),
       ]);
 
-      if (mRes.success) setMetrics(mRes.data);
-      if (cRes.success) setConditions(cRes.data);
-      if (aRes.success) setAuditLogs(aRes.data);
-      if (aiRes.success) setAiLogs(aiRes.data);
+      if (mRes.success && mRes.data) setMetrics(mRes.data);
+      if (cRes.success && Array.isArray(cRes.data)) setConditions(cRes.data);
+      if (aRes.success && Array.isArray(aRes.data)) setAuditLogs(aRes.data);
+      if (aiRes.success && Array.isArray(aiRes.data)) setAiLogs(aiRes.data);
     } catch (e) {
       console.error('Failed to load admin data:', e);
     } finally {
@@ -151,7 +151,7 @@ export const AdminPage: React.FC = () => {
         </div>
 
         <div className="space-y-3">
-          {conditions.map((c) => (
+          {(Array.isArray(conditions) ? conditions : []).map((c) => (
             <div
               key={c.id}
               className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
@@ -201,7 +201,7 @@ export const AdminPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 font-medium">
-              {auditLogs.slice(0, 10).map((log) => (
+              {(Array.isArray(auditLogs) ? auditLogs.slice(0, 10) : []).map((log) => (
                 <tr key={log.id} className="hover:bg-slate-50">
                   <td className="py-2.5 text-slate-500">{new Date(log.createdAt).toLocaleTimeString()}</td>
                   <td className="py-2.5 font-bold text-slate-800">{log.user?.fullName || 'Anonim'}</td>

@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext.js';
 import { Lock, Mail, ArrowRight, ShieldCheck, Stethoscope, Heart, Eye, EyeOff } from 'lucide-react';
 
 interface AuthPageProps {
-  onSuccess: () => void;
+  onSuccess: (role?: string) => void;
 }
 
 interface RoleCredential {
@@ -22,8 +22,8 @@ const DEMO_CREDENTIALS: RoleCredential[] = [
     roleBadge: 'Super Admin',
     badgeBg: 'bg-purple-100 text-purple-800 border-purple-200',
     icon: ShieldCheck,
-    email: 'admin@mehr.uz',
-    pass: 'Password123!',
+    email: 'admin',
+    pass: '852456',
     desc: 'Yangi xodimlar hisobini ochish, login-parollarni tarqatish, audit va tizim xavfsizligi nazorati.',
   },
   {
@@ -67,9 +67,9 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSuccess }) => {
     setLoading(true);
 
     try {
-      const ok = await login(email, password);
-      if (ok) {
-        onSuccess();
+      const loggedUser = await login(email, password);
+      if (loggedUser) {
+        onSuccess(loggedUser.role);
       } else {
         setError('Login yoki parol noto‘g‘ri. Ma’lumotlar bosh administrator tomonidan berilgan bo‘lishi kerak.');
       }
