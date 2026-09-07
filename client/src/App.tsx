@@ -71,7 +71,7 @@ const MainApp: React.FC = () => {
       {/* Floating MEHR AI Assistant Action Button */}
       <button
         onClick={() => setIsAiChatOpen(true)}
-        className="fixed bottom-6 right-6 z-40 px-4 py-3 rounded-full bg-gradient-to-r from-brand-600 via-indigo-600 to-emerald-600 text-white font-bold text-xs shadow-2xl hover:scale-105 active:scale-95 transition-all flex items-center space-x-2 border-2 border-white/50 animate-bounce"
+        className="fixed bottom-8 right-6 z-50 px-4 py-3 rounded-full bg-gradient-to-r from-brand-600 via-indigo-600 to-emerald-600 text-white font-bold text-xs shadow-2xl hover:scale-105 active:scale-95 transition-all flex items-center space-x-2 border-2 border-white/50 animate-bounce cursor-pointer"
         title="MEHR AI Yordamchi bilan suhbat"
       >
         <Sparkles className="w-4 h-4 text-amber-300 fill-amber-300" />
