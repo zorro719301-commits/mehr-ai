@@ -61,11 +61,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
         <div className="relative grid grid-cols-1 lg:grid-cols-2 gap-12 items-center px-6 sm:px-10 lg:px-16 pt-16 pb-14 lg:py-20">
           {/* LEFT: Copy & CTAs */}
           <div className="space-y-8 text-center lg:text-left">
-            <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-white/10 border border-white/15 text-brand-100 text-xs font-bold uppercase tracking-wider backdrop-blur-sm">
-              <Sparkles className="w-4 h-4 text-amber-300 fill-amber-300" />
-              <span>2026-yil pediatrik AI va raqamli reabilitatsiya ekotizimi</span>
-            </div>
-
             <div className="space-y-4">
               <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-white leading-[1.05]">
                 MEHR{' '}
@@ -131,12 +126,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
               >
                 <Heart className="w-20 h-20 text-white/20" />
               </div>
-            </div>
-
-            {/* Floating badge */}
-            <div className="hidden sm:flex absolute -top-5 -left-5 items-center space-x-2 px-4 py-2.5 rounded-2xl bg-white shadow-xl animate-gentle-float">
-              <Heart className="w-4 h-4 text-rose-500 fill-rose-500" />
-              <span className="text-xs font-bold text-slate-800">500+ oila ishonch bildirdi</span>
             </div>
 
             {/* Floating AI chip */}

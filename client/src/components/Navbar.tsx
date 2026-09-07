@@ -7,24 +7,20 @@ import {
   BookOpen,
   TrendingUp,
   Shield,
-  Wifi,
-  WifiOff,
   User,
   LogOut,
-  Sparkles,
-  ChevronDown,
-  Mic
+  ChevronDown
 } from 'lucide-react';
 
 interface NavbarProps {
   currentTab: string;
   setCurrentTab: (tab: string) => void;
-  onOpenAiChat: () => void;
+  onOpenAiChat?: () => void;
   onOpenVoiceAssistant?: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpenAiChat, onOpenVoiceAssistant }) => {
-  const { user, role, isOnline, activeChild, childrenList, setActiveChild, logout } = useAuth();
+export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab }) => {
+  const { user, role, activeChild, childrenList, setActiveChild, logout } = useAuth();
   const { language, setLanguage, t } = useLanguage();
 
   return (
@@ -40,9 +36,6 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpe
             <div>
               <span className="text-xl font-extrabold tracking-tight bg-gradient-to-r from-brand-700 via-brand-600 to-emerald-600 bg-clip-text text-transparent">
                 MEHR AI
-              </span>
-              <span className="hidden sm:inline-block ml-2 text-xs font-semibold px-2 py-0.5 rounded-full bg-brand-50 text-brand-700 border border-brand-200">
-                Pediatric AI 2026
               </span>
             </div>
           </div>
@@ -164,40 +157,8 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpe
             </nav>
           )}
 
-          {/* Right Action Icons: Online Status, AI Button, Language, User */}
+          {/* Right Action Icons: Language, User */}
           <div className="flex items-center space-x-3">
-            {/* Network Badge */}
-            <div
-              className={`flex items-center text-xs font-semibold px-2 py-1 rounded-full ${
-                isOnline ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-800 border border-amber-300 animate-pulse'
-              }`}
-            >
-              {isOnline ? <Wifi className="w-3.5 h-3.5 mr-1" /> : <WifiOff className="w-3.5 h-3.5 mr-1" />}
-              <span className="hidden sm:inline">{isOnline ? t.pwa.online : t.pwa.offline}</span>
-            </div>
-
-            {/* AI Assistant Quick Trigger */}
-            {/* AI Voice Assistant Quick Trigger */}
-            {onOpenVoiceAssistant && (
-              <button
-                onClick={onOpenVoiceAssistant}
-                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs font-semibold shadow-card hover:brightness-110 transition-all cursor-pointer"
-                title="Tabiiy o‘zbek tilidagi AI ovozli yordamchi"
-              >
-                <Mic className="w-3.5 h-3.5 text-amber-300 animate-pulse" />
-                <span className="hidden sm:inline">🎙 Ovozli AI</span>
-              </button>
-            )}
-
-            {/* AI Assistant Quick Trigger */}
-            <button
-              onClick={onOpenAiChat}
-              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-brand-600 to-emerald-600 text-white text-xs font-semibold shadow-card hover:brightness-110 transition-all"
-            >
-              <Sparkles className="w-3.5 h-3.5 fill-amber-300 text-amber-300" />
-              <span>Chat AI</span>
-            </button>
-
             {/* Language Switcher */}
             <div className="relative">
               <select

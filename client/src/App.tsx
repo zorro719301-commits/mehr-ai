@@ -16,8 +16,6 @@ import { SpecialistDashboard } from './pages/SpecialistDashboard.js';
 import { AdminPage } from './pages/AdminPage.js';
 import { AuthPage } from './pages/AuthPage.js';
 
-import { Sparkles, Mic } from 'lucide-react';
-
 const MainApp: React.FC = () => {
   const { user, role, isLoading } = useAuth();
   const [currentTab, setCurrentTab] = useState<string>('landing');
@@ -83,29 +81,6 @@ const MainApp: React.FC = () => {
           />
         )}
       </main>
-
-      {/* Floating Action Buttons: Voice Assistant + AI Chat */}
-      <div className="fixed bottom-8 right-6 z-50 flex items-center space-x-3">
-        {/* Natural Uzbek Voice Assistant Quick Trigger */}
-        <button
-          onClick={() => setIsVoiceAssistantOpen(true)}
-          className="px-4 py-3 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold text-xs shadow-2xl hover:scale-105 active:scale-95 transition-all flex items-center space-x-2 border-2 border-white/60 animate-pulse cursor-pointer"
-          title="MEHR AI Ovozli Yordamchi (O‘zbek tilida gaplashish)"
-        >
-          <Mic className="w-4 h-4 text-amber-300" />
-          <span className="hidden sm:inline">🎙 AI Ovoz</span>
-        </button>
-
-        {/* AI Assistant Chat Trigger */}
-        <button
-          onClick={() => setIsAiChatOpen(true)}
-          className="px-4 py-3 rounded-full bg-gradient-to-r from-brand-600 via-indigo-600 to-emerald-600 text-white font-bold text-xs shadow-2xl hover:scale-105 active:scale-95 transition-all flex items-center space-x-2 border-2 border-white/50 cursor-pointer"
-          title="MEHR AI Yordamchi bilan suhbat"
-        >
-          <Sparkles className="w-4 h-4 text-amber-300 fill-amber-300" />
-          <span className="hidden sm:inline">Chat AI</span>
-        </button>
-      </div>
 
       {/* AI Assistant Chat Modal */}
       <AiAssistantChatModal
