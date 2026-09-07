@@ -78,7 +78,19 @@ class ApiService {
       let role: 'SUPER_ADMIN' | 'MEDICAL_ADMIN' | 'SPECIALIST' | 'PARENT' | 'AUDITOR' = 'PARENT';
       let fullName = 'Dilnoza Karimova';
 
-      if (email === 'admin' || email.includes('admin')) {
+      // Check registered users from ClinicalStore
+      const registeredUsers = ClinicalStore.getUsers();
+      const foundUser = registeredUsers.find(
+        (u) => u.email.toLowerCase() === email.toLowerCase() || (email.toLowerCase() === 'admin' && u.email === 'admin')
+      );
+
+      if (foundUser) {
+        if (!foundUser.isActive) {
+          return { success: false, error: 'Ushbu hisob administrator tomonidan vaqtincha faolsizlantirilgan.' };
+        }
+        role = foundUser.role;
+        fullName = foundUser.fullName;
+      } else if (email === 'admin' || email.includes('admin')) {
         role = 'SUPER_ADMIN';
         fullName = 'MEHR AI Super Administrator';
       } else if (email.includes('nodira') || email.includes('dr')) {
@@ -92,7 +104,13 @@ class ApiService {
         fullName = 'Alisher Umarov';
       }
 
-      const user = { id: `usr-${Date.now()}`, email, fullName, role };
+      const user = {
+        id: foundUser?.id || `usr-${Date.now()}`,
+        email: foundUser?.email || email,
+        fullName,
+        role,
+        phone: foundUser?.phone,
+      };
       localStorage.setItem('mehr_current_user', JSON.stringify(user));
       this.setTokens('local-access-token-netlify', 'local-refresh-token-netlify');
 
@@ -116,21 +134,23 @@ class ApiService {
       return { success: true, data: JSON.parse(stored) as any };
     }
 
-    // 3. Children list - requires authenticated user session
+    // 3. Children list - requires authenticated user session and filters by role
     if (endpoint === '/api/children' && method === 'GET') {
       const stored = localStorage.getItem('mehr_current_user');
       if (!stored) {
         return { success: false, error: 'Avtorizatsiyadan o‘tilmagan' };
       }
-      return { success: true, data: ClinicalStore.getChildren() as any };
+      const currentUser = JSON.parse(stored);
+      return { success: true, data: ClinicalStore.getChildren(currentUser) as any };
     }
 
-    // 4. Create child - registers a new child into the clinical system
+    // 4. Create child - registers a new child into the clinical system bound to current user
     if (endpoint === '/api/children' && method === 'POST') {
       const stored = localStorage.getItem('mehr_current_user');
       if (!stored) {
         return { success: false, error: 'Avtorizatsiyadan o‘tilmagan' };
       }
+      const currentUser = JSON.parse(stored);
       const children = ClinicalStore.getChildren();
       const conditionCode = body.conditions?.[0] || 'MKB_F70_G80';
       let conditionName = 'MKB-10 F70 + G80 III-IV: Yengil aqliy zaiflik + Bolalar serebral falaji';
@@ -146,8 +166,6 @@ class ApiService {
         dateOfBirth: body.dateOfBirth || new Date().toISOString().split('T')[0],
         gender: body.gender || 'MALE',
         region: body.region || 'Toshkent shahar',
-        school: body.school || '',
-        grade: body.grade || '',
         contactPhone: body.contactPhone || '',
         contactAddress: body.contactAddress || '',
         photoUrl: body.photoUrl || (body.gender === 'FEMALE'
@@ -159,17 +177,26 @@ class ApiService {
         gmfcsLevel: body.gmfcsLevel || 'III',
         macsLevel: body.macsLevel || 'III',
         cfcsLevel: body.cfcsLevel || 'III',
+        parentId: currentUser.id || 'usr-parent',
+        parentEmail: currentUser.email || '',
         packages: [],
         assessments: [],
       };
       children.unshift(newChild);
       ClinicalStore.saveChildren(children);
+      ClinicalStore.setActiveChild(newChild.id);
       return { success: true, data: newChild as any };
     }
 
-    // 5. Assessment Questions
-    if (endpoint === '/api/assessments/questions') {
-      return { success: true, data: ClinicalStore.getQuestions() as any };
+    // 5. Assessment Questions - dynamically tailored by condition
+    if (endpoint.startsWith('/api/assessments/questions')) {
+      const parts = endpoint.split('?');
+      let condition = '';
+      if (parts.length > 1) {
+        const params = new URLSearchParams(parts[1]);
+        condition = params.get('condition') || '';
+      }
+      return { success: true, data: ClinicalStore.getQuestions(condition) as any };
     }
 
     // 6. Submit Assessment
@@ -386,15 +413,30 @@ class ApiService {
       };
     }
 
-    if (endpoint === '/api/admin/users') {
+    if (endpoint === '/api/admin/users' && method === 'GET') {
       return {
         success: true,
-        data: [
-          { id: 'usr-1', email: 'admin', fullName: 'MEHR AI Super Administrator', role: 'SUPER_ADMIN', isActive: true },
-          { id: 'usr-2', email: 'dr.nodira@mehr.uz', fullName: 'Dr. Nodira Rahimova', role: 'SPECIALIST', isActive: true },
-          { id: 'usr-3', email: 'dilnoza@mehr.uz', fullName: 'Dilnoza Karimova', role: 'PARENT', isActive: true },
-        ] as any,
+        data: ClinicalStore.getUsers() as any,
       };
+    }
+
+    if (endpoint === '/api/admin/users' && method === 'POST') {
+      const created = ClinicalStore.addUser(body);
+      return { success: true, data: created as any };
+    }
+
+    if (endpoint.startsWith('/api/admin/users/') && method === 'PUT') {
+      const parts = endpoint.split('/');
+      const userId = parts[parts.length - 1];
+      const updated = ClinicalStore.updateUser(userId, body);
+      return { success: !!updated, data: updated as any };
+    }
+
+    if (endpoint.startsWith('/api/admin/users/') && method === 'DELETE') {
+      const parts = endpoint.split('/');
+      const userId = parts[parts.length - 1];
+      const ok = ClinicalStore.deleteUser(userId);
+      return { success: ok, data: { deleted: ok } as any };
     }
 
     // 16. MEHR AI Chat Assistant
@@ -453,6 +495,12 @@ class ApiService {
     return this.request<T>(endpoint, {
       method: 'PUT',
       body: body ? JSON.stringify(body) : undefined,
+    });
+  }
+
+  public delete<T = any>(endpoint: string) {
+    return this.request<T>(endpoint, {
+      method: 'DELETE',
     });
   }
 }

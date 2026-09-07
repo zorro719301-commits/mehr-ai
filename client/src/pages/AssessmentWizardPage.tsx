@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext.js';
 import { useLanguage } from '../context/LanguageContext.js';
 import { api } from '../services/api.js';
@@ -19,7 +19,11 @@ import {
   Printer,
   Calendar,
   BookOpen,
-  Stethoscope
+  Stethoscope,
+  Camera,
+  Upload,
+  Trash2,
+  X
 } from 'lucide-react';
 
 interface AssessmentWizardPageProps {
@@ -120,8 +124,13 @@ export const AssessmentWizardPage: React.FC<AssessmentWizardPageProps> = ({ onNa
   );
   const [gender, setGender] = useState(activeChild?.gender || 'FEMALE');
   const [region, setRegion] = useState(activeChild?.region || 'Toshkent shahar');
-  const [school, setSchool] = useState(activeChild?.school || '');
-  const [grade, setGrade] = useState(activeChild?.grade || '');
+  const [photoUrl, setPhotoUrl] = useState<string>(activeChild?.photoUrl || '');
+  const [isCameraActive, setIsCameraActive] = useState(false);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
   const [contactPhone, setContactPhone] = useState(activeChild?.contactPhone || '');
   const [contactAddress, setContactAddress] = useState(activeChild?.contactAddress || '');
   const [chiefComplaint, setChiefComplaint] = useState(
@@ -167,8 +176,96 @@ export const AssessmentWizardPage: React.FC<AssessmentWizardPageProps> = ({ onNa
   // Step 4: AI Results Output
   const [aiGeneratedPackage, setAiGeneratedPackage] = useState<any>(null);
 
+  // Camera Management
+  const startCamera = async () => {
+    try {
+      setIsCameraActive(true);
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' },
+      });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.play().catch(console.error);
+      }
+    } catch (err) {
+      console.error('Kamera ochishda xatolik:', err);
+      alert('Kameraga ulanib bo‘lmadi. Brauzerda kamera ruxsatini bering yoki fayl orqali rasm yuklang.');
+      setIsCameraActive(false);
+    }
+  };
+
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+    setIsCameraActive(false);
+  };
+
+  const capturePhoto = () => {
+    if (videoRef.current && canvasRef.current) {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      canvas.width = video.videoWidth || 640;
+      canvas.height = video.videoHeight || 480;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+        setPhotoUrl(dataUrl);
+        stopCamera();
+      }
+    }
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPhotoUrl(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   useEffect(() => {
-    loadQuestions();
+    return () => {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop());
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (isCameraActive && videoRef.current && streamRef.current) {
+      videoRef.current.srcObject = streamRef.current;
+      videoRef.current.play().catch(console.error);
+    }
+  }, [isCameraActive]);
+
+  const loadQuestions = async (conditionCode?: string) => {
+    try {
+      const code = conditionCode || selectedDiagnosis;
+      const res = await api.get(`/api/assessments/questions?condition=${encodeURIComponent(code)}`);
+      if (res.success && res.data) {
+        setDomains(res.data);
+        const initialAnswers: Record<string, number> = {};
+        for (const dom of res.data) {
+          for (const q of dom.questions) {
+            initialAnswers[q.id] = 2;
+          }
+        }
+        setAnswers(initialAnswers);
+      }
+    } catch (e) {
+      console.error('Failed to load assessment questions:', e);
+    }
+  };
+
+  useEffect(() => {
+    loadQuestions(selectedDiagnosis);
   }, []);
 
   // Sync with activeChild if available
@@ -176,6 +273,9 @@ export const AssessmentWizardPage: React.FC<AssessmentWizardPageProps> = ({ onNa
     if (activeChild) {
       setFirstName(activeChild.firstName || '');
       setLastName(activeChild.lastName || '');
+      if (activeChild.photoUrl) {
+        setPhotoUrl(activeChild.photoUrl);
+      }
       if (activeChild.dateOfBirth) {
         setDateOfBirth(new Date(activeChild.dateOfBirth).toISOString().split('T')[0]);
       }
@@ -192,41 +292,26 @@ export const AssessmentWizardPage: React.FC<AssessmentWizardPageProps> = ({ onNa
       }
 
       // Check if child matches one of our diagnoses
+      let matchedCode = 'MKB_F70_G80';
       const cCode = activeChild.conditions?.[0]?.condition?.code || activeChild.conditions?.[0]?.code;
       if (cCode && ICD_DIAGNOSES.some((d) => d.code === cCode)) {
-        setSelectedDiagnosis(cCode);
+        matchedCode = cCode;
       } else {
         const combined = `${activeChild.chiefComplaint || ''} ${activeChild.medicalProfile?.doctorConclusions || ''}`.toLowerCase();
         if (combined.includes('h90') || combined.includes('koxlear') || combined.includes('eshitish')) {
-          setSelectedDiagnosis('MKB_H90_3');
+          matchedCode = 'MKB_H90_3';
         } else if (combined.includes('f71') || (combined.includes('o‘rta') && combined.includes('aqliy'))) {
-          setSelectedDiagnosis('MKB_F71');
+          matchedCode = 'MKB_F71';
         } else if (combined.includes('g80') || combined.includes('f70') || combined.includes('falaj')) {
-          setSelectedDiagnosis('MKB_F70_G80');
+          matchedCode = 'MKB_F70_G80';
         } else {
-          setSelectedDiagnosis('MKB_F84');
+          matchedCode = 'MKB_F84';
         }
       }
+      setSelectedDiagnosis(matchedCode);
+      loadQuestions(matchedCode);
     }
   }, [activeChild]);
-
-  const loadQuestions = async () => {
-    try {
-      const res = await api.get('/api/assessments/questions');
-      if (res.success && res.data) {
-        setDomains(res.data);
-        const initialAnswers: Record<string, number> = {};
-        for (const dom of res.data) {
-          for (const q of dom.questions) {
-            initialAnswers[q.id] = 2;
-          }
-        }
-        setAnswers(initialAnswers);
-      }
-    } catch (e) {
-      console.error('Failed to load assessment questions:', e);
-    }
-  };
 
   const handleSelectDiagnosis = (diag: DiagnosisTemplate) => {
     setSelectedDiagnosis(diag.code);
@@ -234,6 +319,7 @@ export const AssessmentWizardPage: React.FC<AssessmentWizardPageProps> = ({ onNa
     setDoctorConclusions(diag.defaultDoctorConclusion);
     setCurrentMedications(diag.defaultMedications);
     setPrecautionsContraindications(diag.defaultPrecautions);
+    loadQuestions(diag.code);
   };
 
   const handleScoreChange = (qId: string, score: number) => {
@@ -262,8 +348,7 @@ export const AssessmentWizardPage: React.FC<AssessmentWizardPageProps> = ({ onNa
           dateOfBirth,
           gender,
           region,
-          school,
-          grade,
+          photoUrl,
           contactPhone,
           contactAddress,
           chiefComplaint,
@@ -421,99 +506,189 @@ export const AssessmentWizardPage: React.FC<AssessmentWizardPageProps> = ({ onNa
             })}
           </div>
 
-          <div className="border-t border-slate-100 pt-6 space-y-4">
-            <h4 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
-              Bolaning Demografik Ma’lumotlari
-            </h4>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-700">Bolaning ismi *</label>
-              <input
-                type="text"
-                className="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:bg-white focus:border-brand-500 font-medium"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                placeholder="Ismni kiriting (masalan: Madina yoki Jasur)"
-              />
+          <div className="border-t border-slate-100 pt-6 space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <h4 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
+                Bolaning Demografik Ma’lumotlari va Fotosurati
+              </h4>
+              <span className="text-xs text-brand-600 font-semibold">
+                * Majburiy maydonlar
+              </span>
             </div>
 
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-700">Familiyasi *</label>
-              <input
-                type="text"
-                className="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:bg-white focus:border-brand-500 font-medium"
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-                placeholder="Familiyani kiriting (masalan: Karimova)"
-              />
+            {/* Bolaning Fotosurati: Fayldan yuklash yoki Jonli Kamera */}
+            <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-5 space-y-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-center space-x-4">
+                  <div className="relative w-20 h-20 rounded-2xl bg-white border-2 border-slate-200 overflow-hidden flex items-center justify-center shadow-xs flex-shrink-0">
+                    {photoUrl ? (
+                      <img src={photoUrl} alt="Bola surati" className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-3xl">👶</span>
+                    )}
+                  </div>
+                  <div>
+                    <h5 className="font-extrabold text-sm text-slate-900">Bolaning fotosurati</h5>
+                    <p className="text-xs text-slate-500">
+                      Jonli kamera orqali rasmga oling yoki kompyuter/telefondan rasm yuklang.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleFileUpload}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs border border-slate-200 shadow-xs flex items-center space-x-1.5 transition-all cursor-pointer"
+                  >
+                    <Upload className="w-4 h-4 text-brand-600" />
+                    <span>Fayldan yuklash</span>
+                  </button>
+
+                  {!isCameraActive ? (
+                    <button
+                      type="button"
+                      onClick={startCamera}
+                      className="px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-xs flex items-center space-x-1.5 transition-all cursor-pointer"
+                    >
+                      <Camera className="w-4 h-4" />
+                      <span>Jonli kamera</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={stopCamera}
+                      className="px-3.5 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs flex items-center space-x-1.5 cursor-pointer"
+                    >
+                      <X className="w-4 h-4" />
+                      <span>Kamerani yopish</span>
+                    </button>
+                  )}
+
+                  {photoUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setPhotoUrl('')}
+                      className="p-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs border border-rose-200 cursor-pointer"
+                      title="Rasmni o‘chirish"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Jonli Kamera Oynasi (Webcam viewfinder) */}
+              {isCameraActive && (
+                <div className="pt-3 border-t border-slate-200/80 flex flex-col items-center space-y-3 bg-white p-4 rounded-xl border">
+                  <div className="relative rounded-2xl overflow-hidden shadow-lg border-2 border-purple-500 bg-black">
+                    <video
+                      ref={videoRef}
+                      autoPlay
+                      playsInline
+                      muted
+                      className="w-full max-w-sm h-60 object-cover"
+                    />
+                    <div className="absolute top-2 left-2 px-2.5 py-1 rounded-md bg-rose-600/90 text-white text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 animate-pulse">
+                      <span className="w-2 h-2 rounded-full bg-white" />
+                      Jonli Kamera Faol
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      type="button"
+                      onClick={capturePhoto}
+                      className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md flex items-center space-x-2 cursor-pointer transition-all"
+                    >
+                      <Camera className="w-4 h-4" />
+                      <span>📸 Suratga olish (Snapshot)</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={stopCamera}
+                      className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs cursor-pointer"
+                    >
+                      Bekor qilish
+                    </button>
+                  </div>
+                </div>
+              )}
+              <canvas ref={canvasRef} className="hidden" />
             </div>
 
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-700">Sharifi (otasining ismi)</label>
-              <input
-                type="text"
-                className="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:bg-white focus:border-brand-500"
-                value={middleName}
-                onChange={(e) => setMiddleName(e.target.value)}
-                placeholder="Alisherovich"
-              />
-            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-700">Bolaning ismi *</label>
+                <input
+                  type="text"
+                  className="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:bg-white focus:border-brand-500 font-medium"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  placeholder="Ismni kiriting (masalan: Madina yoki Jasur)"
+                />
+              </div>
 
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-700">Tug‘ilgan sana *</label>
-              <input
-                type="date"
-                className="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:bg-white focus:border-brand-500"
-                value={dateOfBirth}
-                onChange={(e) => setDateOfBirth(e.target.value)}
-              />
-            </div>
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-700">Familiyasi *</label>
+                <input
+                  type="text"
+                  className="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:bg-white focus:border-brand-500 font-medium"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  placeholder="Familiyani kiriting (masalan: Karimova)"
+                />
+              </div>
 
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-700">Jinsi</label>
-              <select
-                className="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:bg-white focus:border-brand-500"
-                value={gender}
-                onChange={(e) => setGender(e.target.value)}
-              >
-                <option value="MALE">O‘g‘il bola</option>
-                <option value="FEMALE">Qiz bola</option>
-              </select>
-            </div>
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-700">Sharifi (otasining ismi)</label>
+                <input
+                  type="text"
+                  className="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:bg-white focus:border-brand-500"
+                  value={middleName}
+                  onChange={(e) => setMiddleName(e.target.value)}
+                  placeholder="Alisherovich"
+                />
+              </div>
 
-            <div className="sm:col-span-2 space-y-1">
-              <label className="text-xs font-bold text-slate-700">Yashash hududi</label>
-              <input
-                type="text"
-                className="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:bg-white focus:border-brand-500"
-                value={region}
-                onChange={(e) => setRegion(e.target.value)}
-                placeholder="Toshkent shahar, Chilonzor tumani"
-              />
-            </div>
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-700">Tug‘ilgan sana *</label>
+                <input
+                  type="date"
+                  className="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:bg-white focus:border-brand-500"
+                  value={dateOfBirth}
+                  onChange={(e) => setDateOfBirth(e.target.value)}
+                />
+              </div>
 
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-700">Maktab</label>
-              <input
-                type="text"
-                className="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:bg-white focus:border-brand-500"
-                value={school}
-                onChange={(e) => setSchool(e.target.value)}
-                placeholder="Maktabgacha / 25-maktab"
-              />
-            </div>
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-700">Jinsi</label>
+                <select
+                  className="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:bg-white focus:border-brand-500"
+                  value={gender}
+                  onChange={(e) => setGender(e.target.value)}
+                >
+                  <option value="MALE">O‘g‘il bola</option>
+                  <option value="FEMALE">Qiz bola</option>
+                </select>
+              </div>
 
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-700">Sinf</label>
-              <input
-                type="text"
-                className="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:bg-white focus:border-brand-500"
-                value={grade}
-                onChange={(e) => setGrade(e.target.value)}
-                placeholder="1-sinf"
-              />
-            </div>
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-700">Yashash hududi</label>
+                <input
+                  type="text"
+                  className="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:bg-white focus:border-brand-500"
+                  value={region}
+                  onChange={(e) => setRegion(e.target.value)}
+                  placeholder="Toshkent shahar, Chilonzor tumani"
+                />
+              </div>
 
             <div className="space-y-1">
               <label className="text-xs font-bold text-slate-700">Aloqa telefoni</label>

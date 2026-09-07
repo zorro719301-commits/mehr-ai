@@ -240,3 +240,40 @@ export const createStaffUser = async (req: AuthenticatedRequest, res: Response) 
     return res.status(500).json({ success: false, error: 'Xodim hisobini yaratishda xatolik yuz berdi' });
   }
 };
+
+export const updateUser = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { fullName, phone, role, isActive, password } = req.body;
+
+    const dataToUpdate: any = {};
+    if (fullName !== undefined) dataToUpdate.fullName = fullName;
+    if (phone !== undefined) dataToUpdate.phone = phone;
+    if (role !== undefined && VALID_STAFF_ROLES.includes(role)) dataToUpdate.role = role;
+    if (isActive !== undefined) dataToUpdate.isActive = isActive;
+    if (password) {
+      dataToUpdate.passwordHash = await bcrypt.hash(password, 10);
+    }
+
+    const updated = await prisma.user.update({
+      where: { id },
+      data: dataToUpdate,
+      select: { id: true, email: true, fullName: true, phone: true, role: true, isActive: true },
+    });
+
+    return res.json({ success: true, data: updated });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, error: 'Foydalanuvchini yangilashda xatolik yuz berdi' });
+  }
+};
+
+export const deleteUser = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    await prisma.user.delete({ where: { id } });
+    return res.json({ success: true, message: 'Foydalanuvchi muvaffaqiyatli o‘chirildi' });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, error: 'Foydalanuvchini o‘chirishda xatolik yuz berdi' });
+  }
+};
+

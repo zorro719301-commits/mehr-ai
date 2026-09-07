@@ -67,6 +67,8 @@ router.get('/admin/audit-logs', authenticate, authorize(['SUPER_ADMIN', 'MEDICAL
 router.get('/admin/ai-logs', authenticate, authorize(['SUPER_ADMIN', 'MEDICAL_ADMIN', 'AUDITOR']), adminCtrl.getAiLogs);
 router.get('/admin/users', authenticate, authorize(['SUPER_ADMIN', 'MEDICAL_ADMIN']), adminCtrl.getUsers);
 router.post('/admin/users', authenticate, authorize(['SUPER_ADMIN']), logAudit('CREATE_STAFF_USER', 'User'), adminCtrl.createStaffUser);
+router.put('/admin/users/:id', authenticate, authorize(['SUPER_ADMIN']), logAudit('UPDATE_USER', 'User'), adminCtrl.updateUser);
+router.delete('/admin/users/:id', authenticate, authorize(['SUPER_ADMIN']), logAudit('DELETE_USER', 'User'), adminCtrl.deleteUser);
 router.get('/admin/specialist-types', authenticate, adminCtrl.getSpecialistTypes);
 
 // 10. Offline PWA Batch Sync route

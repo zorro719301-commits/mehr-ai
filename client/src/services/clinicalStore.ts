@@ -1,12 +1,27 @@
 // Client-side clinical store and embedded AI engine for Netlify standalone deployment
 
+export interface StoredUser {
+  id: string;
+  email: string;
+  fullName: string;
+  role: 'SUPER_ADMIN' | 'MEDICAL_ADMIN' | 'SPECIALIST' | 'PARENT' | 'AUDITOR';
+  phone?: string;
+  isActive: boolean;
+  specialty?: string;
+  password?: string;
+  createdAt: string;
+}
+
 export interface StoredChild {
   id: string;
   firstName: string;
+  middleName?: string;
   lastName: string;
   dateOfBirth: string;
   gender: string;
   region: string;
+  contactPhone?: string;
+  contactAddress?: string;
   photoUrl: string;
   chiefComplaint: string;
   conditions: any[];
@@ -16,6 +31,9 @@ export interface StoredChild {
   gmfcsLevel?: string; // Level I - V
   macsLevel?: string;  // Level I - V
   cfcsLevel?: string;  // Level I - V
+  parentId?: string;
+  parentEmail?: string;
+  createdAt?: string;
 }
 
 export type MedicationStatus = 'DRAFT' | 'PENDING_REVIEW' | 'APPROVED' | 'ACTIVE' | 'PAUSED' | 'COMPLETED' | 'DISCONTINUED';
@@ -87,11 +105,67 @@ export interface DailyCareTimelineItem {
   isCompleted: boolean;
 }
 
+const DEFAULT_USERS: StoredUser[] = [
+  {
+    id: 'usr-admin',
+    email: 'admin',
+    fullName: 'MEHR AI Super Administrator',
+    role: 'SUPER_ADMIN',
+    phone: '+998 71 200 00 01',
+    password: '852456',
+    isActive: true,
+    createdAt: '2026-01-01T00:00:00.000Z',
+  },
+  {
+    id: 'usr-spec-nodira',
+    email: 'dr.nodira@mehr.uz',
+    fullName: 'Dr. Nodira Rahimova',
+    role: 'SPECIALIST',
+    specialty: 'Bolalar nevrologi',
+    phone: '+998 90 911 22 33',
+    password: 'Password123!',
+    isActive: true,
+    createdAt: '2026-01-05T00:00:00.000Z',
+  },
+  {
+    id: 'usr-parent-dilnoza',
+    email: 'dilnoza@mehr.uz',
+    fullName: 'Dilnoza Karimova',
+    role: 'PARENT',
+    phone: '+998 90 123 45 67',
+    password: 'Password123!',
+    isActive: true,
+    createdAt: '2026-02-10T00:00:00.000Z',
+  },
+  {
+    id: 'usr-parent-alisher',
+    email: 'alisher@mehr.uz',
+    fullName: 'Alisher Umarov',
+    role: 'PARENT',
+    phone: '+998 93 555 44 33',
+    password: 'Password123!',
+    isActive: true,
+    createdAt: '2026-02-15T00:00:00.000Z',
+  },
+  {
+    id: 'usr-auditor',
+    email: 'audit@mehr.uz',
+    fullName: 'Zafar Karimov',
+    role: 'AUDITOR',
+    phone: '+998 97 777 88 99',
+    password: 'Password123!',
+    isActive: true,
+    createdAt: '2026-02-20T00:00:00.000Z',
+  },
+];
+
 const DEFAULT_CHILDREN: StoredChild[] = [
   {
     id: 'child-madina',
     firstName: 'Madina',
     lastName: 'Karimova',
+    parentId: 'usr-parent-dilnoza',
+    parentEmail: 'dilnoza@mehr.uz',
     dateOfBirth: '2021-08-20',
     gender: 'FEMALE',
     region: 'Toshkent shahar',
@@ -117,6 +191,8 @@ const DEFAULT_CHILDREN: StoredChild[] = [
     id: 'child-jasur',
     firstName: 'Jasur',
     lastName: 'Karimov',
+    parentId: 'usr-parent-dilnoza',
+    parentEmail: 'dilnoza@mehr.uz',
     dateOfBirth: '2022-04-15',
     gender: 'MALE',
     region: 'Toshkent shahar',
@@ -143,6 +219,8 @@ const DEFAULT_CHILDREN: StoredChild[] = [
     id: 'child-timur',
     firstName: 'Timur',
     lastName: 'Umarov',
+    parentId: 'usr-parent-alisher',
+    parentEmail: 'alisher@mehr.uz',
     dateOfBirth: '2020-03-10',
     gender: 'MALE',
     region: 'Samarqand viloyati',
@@ -168,6 +246,8 @@ const DEFAULT_CHILDREN: StoredChild[] = [
     id: 'child-zilola',
     firstName: 'Zilola',
     lastName: 'Ahmadova',
+    parentId: 'usr-parent-dilnoza',
+    parentEmail: 'dilnoza@mehr.uz',
     dateOfBirth: '2021-11-05',
     gender: 'FEMALE',
     region: 'Farg‘ona viloyati',
@@ -322,74 +402,266 @@ const DEFAULT_AAC_CATEGORIES = [
   },
 ];
 
-const DEFAULT_QUESTIONS = [
-  {
-    id: 'd-gmfcs',
-    name: 'Yirik motor funksiyalar (GMFCS I-V)',
-    questions: [
-      { id: 'q-gmf-1', questionText: 'Bola mustaqil, xodunok yoki boshqa tayanch vositasiz yura oladimi?' },
-      { id: 'q-gmf-2', questionText: 'Stulda o‘tirganda gavda va boshini simmetrik ushlab tura oladimi?' },
-      { id: 'q-gmf-3', questionText: 'Yotgan holatdan mustaqil o‘tirishga o‘ta oladimi?' },
-    ],
-  },
-  {
-    id: 'd-cognitive',
-    name: 'Kognitiv rivojlanish (F70 / Intellektual soha)',
-    questions: [
-      { id: 'q-cog-1', questionText: 'Tanish buyumlar va o‘yinchoqlarni vazifasiga ko‘ra farqlay oladimi?' },
-      { id: 'q-cog-2', questionText: 'Asosiy ranglar (qizil, ko‘k, sariq, yashil)ni ko‘rsata oladimi?' },
-      { id: 'q-cog-3', questionText: 'Oddiy sabab-oqibat zanjirini tushunadimi?' },
-      { id: 'q-cog-4', questionText: 'Faoliyatga kamida 3-5 daqiqa diqqatini jamlay oladimi?' },
-    ],
-  },
-  {
-    id: 'd-speech',
-    name: 'Nutq va kommunikatsiya (CFCS I-V)',
-    questions: [
-      { id: 'q-sp-1', questionText: 'O‘z ismini aytib chaqirganda o‘girilib qaraydimi?' },
-      { id: 'q-sp-2', questionText: 'Kattalar bilan muloqotda ko‘z bilan aloqa o‘rnatadimi?' },
-      { id: 'q-sp-3', questionText: 'O‘z ehtiyojini (suv, ovqat) AAC yoki so‘z orqali bildiradimi?' },
-      { id: 'q-sp-4', questionText: 'Kamida 10-15 ta tushunarli so‘zni qo‘llay oladimi?' },
-    ],
-  },
-  {
-    id: 'd-motor',
-    name: 'Qo‘l harakati va mayda motorika (MACS I-V)',
-    questions: [
-      { id: 'q-mot-1', questionText: 'Mayda narsalarni ikki barmoq (qisqich usuli) bilan ushlay oladimi?' },
-      { id: 'q-mot-2', questionText: 'Qoshiqni qo‘lida ushlab ovqatlana oladimi?' },
-      { id: 'q-mot-3', questionText: 'Buyumlarni bir qo‘ldan ikkinchi qo‘lga o‘tkaza oladimi?' },
-    ],
-  },
-  {
-    id: 'd-adl',
-    name: 'Mustaqil hayot ko‘nikmalari (ADL / Ergoterapiya)',
-    questions: [
-      { id: 'q-adl-1', questionText: 'Stakanni mustaqil ushlab suv ichadimi?' },
-      { id: 'q-adl-2', questionText: 'Hojatxonaga borish zarurligini bildira oladimi?' },
-      { id: 'q-adl-3', questionText: 'Qo‘llarini suv va sovun bilan yuvish harakatlarini bajaradimi?' },
-    ],
-  },
-];
+// Kasallik turiga mos ixtisoslashgan dinamik anketalar to‘plami
+export const DIAGNOSIS_QUESTIONS: Record<string, any[]> = {
+  MKB_F70_G80: [
+    {
+      id: 'd-posture',
+      name: 'Postural nazorat va Gavda muvozanati (G80 BSF)',
+      description: 'Stulda o‘tirish, boshni tutish va simmetrik gavda holati',
+      questions: [
+        { id: 'q-f70g80-1', questionText: 'Maxsus tayanchli stulda gavdani simmetrik tutib o‘tirish barqarorligi (0: mutlaqo o‘tirolmaydi, 5: 30+ daqiqa barqaror)' },
+        { id: 'q-f70g80-2', questionText: 'Boshni vertikal holatda mustaqil tutib turish davomiyligi (0: bosh pastga tushadi, 5: to‘liq erkin boshqaradi)' },
+        { id: 'q-f70g80-3', questionText: 'Yotgan holatda orqa va qorin muskullari simmetriyasi hamda passiv o‘tirishga ko‘maklashishi' },
+      ],
+    },
+    {
+      id: 'd-macs',
+      name: 'Qo‘l funksiyasi va Spastiklik (MACS I-V)',
+      description: 'Qo‘l panjasi, barmoqlar harakati va spastik gipertonus',
+      questions: [
+        { id: 'q-f70g80-4', questionText: 'Katta va qalin tutqichli o‘yinchoqni ushlash va ko‘z oldiga olib kelish (MACS III daraja)' },
+        { id: 'q-f70g80-5', questionText: 'Oyoq-qo‘l muskullarida spastiklik (taranglik) darajasi va passiv bukish-yozish harakatlariga mayinligi' },
+        { id: 'q-f70g80-6', questionText: 'Buyumni bir qo‘ldan ikkinchi qo‘lga uzatish yoki kaftni stol yuzasiga tekis qo‘yish' },
+      ],
+    },
+    {
+      id: 'd-f70-cognition',
+      name: 'Kognitiv va Mantiqiy saralash (F70)',
+      description: 'Yengil intellektual soha, idrok va sodda tushunchalar',
+      questions: [
+        { id: 'q-f70g80-7', questionText: 'Katta va kichik to‘p yoki turli rangdagi buyumlarni ko‘z yoki imo-ishora bilan ajratish' },
+        { id: 'q-f70g80-8', questionText: '1 bosqichli oddiy ko‘rsatmani (“Menga ber”, “Qo‘lingni ko‘rsat”) tushunish va bajarish' },
+      ],
+    },
+    {
+      id: 'd-feeding',
+      name: 'Yutish va Oziqlanish xavfsizligi',
+      description: 'Aspiratsiya xavfi va moslashtirilgan oziqlanish',
+      questions: [
+        { id: 'q-f70g80-9', questionText: 'Suyuqlik va pyure ovqatlarni yo‘talmasdan va tiqilmasdan xavfsiz yutish' },
+        { id: 'q-f70g80-10', questionText: 'Moslashtirilgan (qalin tutqichli) qoshiqdan taomlanishda faol ishtirok etish' },
+      ],
+    },
+  ],
+
+  MKB_F71: [
+    {
+      id: 'd-adl-selfcare',
+      name: 'O‘z-o‘ziga xizmat va Kundalik ko‘nikmalar (ADL)',
+      description: 'Mustaqil ovqatlanish, kiyinish va gigiyena qoidalari',
+      questions: [
+        { id: 'q-f71-1', questionText: 'Qoshiqni mustaqil ushlab, taomni to‘kmasdan og‘ziga yetkaza oladimi?' },
+        { id: 'q-f71-2', questionText: 'Oddiy kiyim-kechaklarni (paypoq, shlyapa, shim) yechish va kiyishda qatnashishi' },
+        { id: 'q-f71-3', questionText: 'Hojatxonaga borish zarurligini vaqtida bildirish va tartibga rioya qilish' },
+        { id: 'q-f71-4', questionText: 'Qo‘llarini suv va sovun bilan yuvib, sochiqqa artish ketma-ketligini bajarishi' },
+      ],
+    },
+    {
+      id: 'd-f71-task-steps',
+      name: 'Bosqichli ta’lim va Vazifalar tahlili (Task Analysis)',
+      description: 'Mayda qadamlarga bo‘lingan amallarni bajarish va takrorlash',
+      questions: [
+        { id: 'q-f71-5', questionText: '2–3 qadamdan iborat oddiy ketma-ketlikni (o‘yinchoqni ol -> qutiga sol -> qopqog‘ini yop) bajarishi' },
+        { id: 'q-f71-6', questionText: 'Kundalik odatiy kun tartibiga (uyqu, nonushta, sayr) qarshiliksiz rioya qilishi' },
+      ],
+    },
+    {
+      id: 'd-f71-safety',
+      name: 'Xavfsizlik va Ijtimoiy kommunikatsiya',
+      description: 'Atrofdagi xavflarni idrok etish va sodda muloqot',
+      questions: [
+        { id: 'q-f71-7', questionText: 'Issiq, o‘tkir yoki xavfli buyumlardan ogohlantirilganda saqlanishi' },
+        { id: 'q-f71-8', questionText: 'O‘z xohish-istagini 2–3 ta sodda so‘z yoki aniq ishora orqali bildira olishi' },
+      ],
+    },
+  ],
+
+  MKB_F84: [
+    {
+      id: 'd-f84-sensory',
+      name: 'Sensor sezgirlik va Barqarorlik (Autizm Spektri)',
+      description: 'Tovush, yorug‘lik, taktil ta’sirlarga bo‘lgan munosabat',
+      questions: [
+        { id: 'q-f84-1', questionText: 'Kutilmagan shovqin, baland tovush yoki gavjum joylarda o‘zini xotirjam tuta olishi' },
+        { id: 'q-f84-2', questionText: 'Taktil teginishlar, kiyim matolari yoki yangi taom teksturalariga bardoshliligi' },
+        { id: 'q-f84-3', questionText: 'Sensor haddan tashqari yuklama (meltdown) paytida tinchlanish burchagida o‘zini tiklay olishi' },
+      ],
+    },
+    {
+      id: 'd-f84-aac',
+      name: 'Ijtimoiy muloqot va AAC ko‘nikmalari',
+      description: 'Ko‘z kontakti, kartochkalar va ehtiyojni ifodalash',
+      questions: [
+        { id: 'q-f84-4', questionText: 'Ismiga chaqirilganda ko‘z bilan aloqa (eye contact) o‘rnatishi yoki e’tibor qaratishi' },
+        { id: 'q-f84-5', questionText: 'Ehtiyojini (suv, ovqat, o‘yin) bildirish uchun AAC kartochkasi yoki imo-ishoradan foydalanishi' },
+        { id: 'q-f84-6', questionText: 'Kattalarning quvonchli yoki qiziqarli emotsiyalariga javoban tabassum qilishi' },
+      ],
+    },
+    {
+      id: 'd-f84-routine',
+      name: 'Xulq-atvor va Vizual tartib',
+      description: 'Stereotipiyalar va kun tartibi o‘zgarishiga moslashuv',
+      questions: [
+        { id: 'q-f84-7', questionText: 'Kun tartibi yoki bir faoliyatdan boshqasiga o‘tish (transitsiya)ni vizual jadval orqali qabul qilishi' },
+        { id: 'q-f84-8', questionText: 'Takroriy harakatlar (qo‘l silkitish, aylanma)ni qiziqarli o‘yin bilan almashtira olishi' },
+      ],
+    },
+  ],
+
+  MKB_H90_3: [
+    {
+      id: 'd-h90-device',
+      name: 'Implant moslashuvi va Tovush deteksiyasi (H90.3)',
+      description: 'Koxlear implant/apparatni taqish va tovushni payqash',
+      questions: [
+        { id: 'q-h90-1', questionText: 'Koxlear implant yoki eshitish apparatini kun davomida tinch va intizomli taqib yurishi' },
+        { id: 'q-h90-2', questionText: 'Kutilmagan tovush (baraban, qo‘ng‘iroq) chiqqanda harakatini to‘xtatib, tovush borligini payqashi (Deteksiya)' },
+      ],
+    },
+    {
+      id: 'd-h90-ling6',
+      name: 'Ling-6 tovushlar testi va Differensiatsiya',
+      description: 'Turli chastotadagi tovushlarni farqlash va lokalizatsiya',
+      questions: [
+        { id: 'q-h90-3', questionText: 'Ling-6 testidagi unli tovushlarni ([A], [U], [I]) eshitib, mos rasmga ishora qilishi' },
+        { id: 'q-h90-4', questionText: 'Ling-6 testidagi shivirlagan tovushlarni ([S], [SH], [M]) eshitib ajrata olishi' },
+        { id: 'q-h90-5', questionText: 'Tovush qaysi tomondan (o‘ng/chap/orqa) kelayotganini boshini burib aniqlashi (Lokalizatsiya)' },
+      ],
+    },
+    {
+      id: 'd-h90-speech',
+      name: 'Nutqiy tushunish va Ovozli taqlid',
+      description: 'Labdan o‘qish, so‘zlarni eshitib tushunish va taqlid',
+      questions: [
+        { id: 'q-h90-6', questionText: 'Kundalik funksional so‘zlarni (“Salom”, “Suv”, “Qani”) eshitish va lab harakatiga qarab tushunishi' },
+        { id: 'q-h90-7', questionText: 'Eshitilgan ritmik tovushlarga o‘z ovozi bilan jo‘rlik qilishga urinishi' },
+      ],
+    },
+  ],
+};
+
+const DEFAULT_QUESTIONS = DIAGNOSIS_QUESTIONS.MKB_F70_G80;
 
 export class ClinicalStore {
-  public static getChildren(): StoredChild[] {
+  // ==========================================
+  // FOYDALANUVCHILAR BOSHQARUVI (USER MANAGEMENT)
+  // ==========================================
+  public static getUsers(): StoredUser[] {
+    try {
+      const data = localStorage.getItem('mehr_local_users');
+      if (data) {
+        const parsed = JSON.parse(data);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    localStorage.setItem('mehr_local_users', JSON.stringify(DEFAULT_USERS));
+    return DEFAULT_USERS;
+  }
+
+  public static addUser(userData: Partial<StoredUser>): StoredUser {
+    const users = this.getUsers();
+    const newUser: StoredUser = {
+      id: userData.id || `usr-${Date.now()}`,
+      email: (userData.email || '').toLowerCase().trim(),
+      fullName: userData.fullName || 'Yangi Foydalanuvchi',
+      role: userData.role || 'PARENT',
+      phone: userData.phone || '',
+      isActive: userData.isActive !== undefined ? userData.isActive : true,
+      specialty: userData.specialty || '',
+      password: userData.password || 'Password123!',
+      createdAt: new Date().toISOString(),
+    };
+    users.push(newUser);
+    localStorage.setItem('mehr_local_users', JSON.stringify(users));
+    return newUser;
+  }
+
+  public static updateUser(id: string, updates: Partial<StoredUser>): StoredUser | null {
+    const users = this.getUsers();
+    const idx = users.findIndex((u) => u.id === id || u.email === id);
+    if (idx === -1) return null;
+
+    users[idx] = {
+      ...users[idx],
+      ...updates,
+      email: updates.email ? updates.email.toLowerCase().trim() : users[idx].email,
+    };
+    localStorage.setItem('mehr_local_users', JSON.stringify(users));
+    return users[idx];
+  }
+
+  public static deleteUser(id: string): boolean {
+    const users = this.getUsers();
+    const filtered = users.filter((u) => u.id !== id && u.email !== id);
+    if (filtered.length === users.length) return false;
+    localStorage.setItem('mehr_local_users', JSON.stringify(filtered));
+    return true;
+  }
+
+  public static toggleUserActive(id: string): StoredUser | null {
+    const users = this.getUsers();
+    const user = users.find((u) => u.id === id || u.email === id);
+    if (!user) return null;
+    user.isActive = !user.isActive;
+    localStorage.setItem('mehr_local_users', JSON.stringify(users));
+    return user;
+  }
+
+  // ==========================================
+  // BOLALAR MA'LUMOTLARI VA MAXFIYLIK (DATA ISOLATION)
+  // ==========================================
+  public static getChildren(currentUser?: { role: string; id?: string; email?: string } | null): StoredChild[] {
+    let all: StoredChild[] = [];
     try {
       const data = localStorage.getItem('mehr_local_children');
       if (data) {
         const parsed = JSON.parse(data);
-        if (Array.isArray(parsed) && parsed.length >= 4) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) all = parsed;
       }
     } catch {}
-    localStorage.setItem('mehr_local_children', JSON.stringify(DEFAULT_CHILDREN));
-    return DEFAULT_CHILDREN;
+    if (all.length === 0) {
+      all = DEFAULT_CHILDREN;
+      localStorage.setItem('mehr_local_children', JSON.stringify(all));
+    }
+
+    if (!currentUser) return all;
+
+    // Admin barcha bolalarni ko'radi
+    if (currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'MEDICAL_ADMIN' || currentUser.role === 'AUDITOR') {
+      return all;
+    }
+
+    // Mutaxassis barcha bemorlarni ko'radi
+    if (currentUser.role === 'SPECIALIST') {
+      return all;
+    }
+
+    // Ota-ona FAQAT O'Z FARZANDI(LARI)NI ko'radi
+    if (currentUser.role === 'PARENT') {
+      const normEmail = (currentUser.email || '').toLowerCase().trim();
+      const normId = currentUser.id || '';
+      return all.filter((c: any) => {
+        const cEmail = (c.parentEmail || '').toLowerCase().trim();
+        const cId = c.parentId || '';
+        if (cEmail && cEmail === normEmail) return true;
+        if (cId && cId === normId) return true;
+        // Demo standart bog'lanishlar
+        if (normEmail.includes('dilnoza') && (c.id === 'child-madina' || c.id === 'child-jasur' || c.id === 'child-zilola')) return true;
+        if (normEmail.includes('alisher') && c.id === 'child-timur') return true;
+        return false;
+      });
+    }
+
+    return all;
   }
 
-  public static getActiveChild(): StoredChild {
-    const list = this.getChildren();
+  public static getActiveChild(currentUser?: any): StoredChild | null {
+    const list = this.getChildren(currentUser);
+    if (list.length === 0) return null;
     const activeId = localStorage.getItem('mehr_active_child_id');
     if (activeId) {
-      const found = list.find(c => c.id === activeId);
+      const found = list.find((c) => c.id === activeId);
       if (found) return found;
     }
     return list[0];
@@ -403,6 +675,16 @@ export class ClinicalStore {
     localStorage.setItem('mehr_local_children', JSON.stringify(children));
   }
 
+  public static getQuestions(conditionCode?: string) {
+    if (!conditionCode) return DEFAULT_QUESTIONS;
+    const code = conditionCode.toUpperCase();
+    if (code.includes('F70') || code.includes('G80')) return DIAGNOSIS_QUESTIONS.MKB_F70_G80;
+    if (code.includes('F71')) return DIAGNOSIS_QUESTIONS.MKB_F71;
+    if (code.includes('F84') || code.includes('ASD') || code.includes('AUTI')) return DIAGNOSIS_QUESTIONS.MKB_F84;
+    if (code.includes('H90') || code.includes('KOXLEAR') || code.includes('KAR')) return DIAGNOSIS_QUESTIONS.MKB_H90_3;
+    return DEFAULT_QUESTIONS;
+  }
+
   public static getAacCategories() {
     try {
       const data = localStorage.getItem('mehr_local_aac');
@@ -412,9 +694,7 @@ export class ClinicalStore {
     return DEFAULT_AAC_CATEGORIES;
   }
 
-  public static getQuestions() {
-    return DEFAULT_QUESTIONS;
-  }
+
 
   // ==========================================
   // 90–136. MEDICATION MANAGEMENT METHODS
@@ -817,6 +1097,26 @@ Qabul tartibi: ${med.frequency}, ${med.scheduledTimes.join(', ')} vaqtlarida (${
     const children = this.getChildren();
     const child = children.find((c) => c.id === childId) || children[0];
 
+    // Yoshi va jinsini aniqlash
+    const birthDate = new Date(child.dateOfBirth || '2021-01-01');
+    const today = new Date();
+    let ageYears = today.getFullYear() - birthDate.getFullYear();
+    let ageMonths = today.getMonth() - birthDate.getMonth();
+    if (ageMonths < 0) {
+      ageYears--;
+      ageMonths += 12;
+    }
+    const isMale = (child.gender || '').toUpperCase() === 'MALE';
+    const genderTerm = isMale ? 'o‘g‘il bola' : 'qiz bola';
+    const ageCategory =
+      ageYears < 5
+        ? 'Kichik yoshli (2-4 yosh)'
+        : ageYears <= 7
+        ? 'Maktabgacha tayyorgarlik (5-7 yosh)'
+        : ageYears <= 12
+        ? 'Boshlang‘ich maktab yoshi (8-12 yosh)'
+        : 'O‘smirlik davri (13+ yosh)';
+
     const conditionCodes = (child.conditions || []).map((c: any) => c.condition?.code || c.code || '').join(' ').toLowerCase();
     const notes = `${child.chiefComplaint || ''} ${child.medicalProfile?.doctorConclusions || ''} ${conditionCodes}`.toLowerCase();
 
@@ -846,10 +1146,10 @@ Qabul tartibi: ${med.frequency}, ${med.scheduledTimes.join(', ')} vaqtlarida (${
     let specialistFeedback = '';
 
     if (isF70_G80) {
-      summaryText = `MKB-10 F70 (Yengil intellektual rivojlanish buzilishi) va G80 (Tserebral falaj III-IV daraja, GMFCS III-IV, MACS III, CFCS III) bo‘yicha kompleks individual reabilitatsiya dasturi shakllantirildi. Postural barqarorlik, ortezlardan to‘g‘ri foydalanish, yengil kognitiv rag‘batlantirish va dori adherence nazorati integratsiya qilindi.`;
+      summaryText = `${child.firstName} (${genderTerm}, ${ageYears} yosh, ${ageCategory}) uchun MKB-10 F70 (Yengil intellektual rivojlanish buzilishi) va G80 (Tserebral falaj III-IV daraja, GMFCS III-IV, MACS III, CFCS III) bo‘yicha yoshi va jinsiga moslashtirilgan kompleks individual reabilitatsiya dasturi shakllantirildi. Postural barqarorlik, ortezlardan to‘g‘ri foydalanish, yengil kognitiv rag‘batlantirish va dori adherence nazorati integratsiya qilindi.`;
       priorityDomains = ['Motor rivojlanish (LFK)', 'Kognitiv rivojlanish (IEP)', 'Mustaqil hayot ko‘nikmalari (Ergoterapiya)'];
       specialistReferrals = ['FIZIOTERAPEVT', 'ERGOTERAPEVT', 'NEVROLOG', 'MAXSUS_PEDAGOG'];
-      specialistFeedback = 'GMFCS III-IV bo‘yicha tayanchli stulda simmetrik o‘tirish, xodunok bilan harakatlanish va dori (Baklofen) tartibiga rioya qilish tavsiya etiladi. — Dr. Nodira Rahimova';
+      specialistFeedback = `GMFCS III-IV bo‘yicha tayanchli stulda simmetrik o‘tirish, xodunok bilan harakatlanish va ${ageYears} yoshli ${genderTerm} uchun dori (Baklofen) tartibiga rioya qilish tavsiya etiladi. — Dr. Nodira Rahimova`;
 
       modules = [
         {
@@ -906,10 +1206,10 @@ Qabul tartibi: ${med.frequency}, ${med.scheduledTimes.join(', ')} vaqtlarida (${
         },
       ];
     } else if (isH90_3) {
-      summaryText = `Bolaning Koxlear implant (MKB-10 H90.3) bo‘yicha eshitish analizatori va audiotrenirovka ehtiyojlari tahlil qilindi. Dastur tovush bor-yo‘qligini aniqlash, maishiy va nutqiy tovushlarni farqlash hamda fonematik idrokni shakllantirishga yo‘naltirildi.`;
+      summaryText = `${child.firstName} (${genderTerm}, ${ageYears} yosh, ${ageCategory}) uchun MKB-10 H90.3 (Orttirilgan kar-soqovlik / Koxlear implant) bo‘yicha individual audiotrenirovka va fonematik idrok dasturi shakllantirildi. Ling-6 testi, tovush deteksiyasi va yoshga mos muloqot o‘yinlari kiritildi.`;
       priorityDomains = ['Nutq va kommunikatsiya', 'Ijtimoiy rivojlanish', 'Kognitiv rivojlanish'];
       specialistReferrals = ['SURDOPEDAGOG', 'AUDIOLOG', 'LOGOPED'];
-      specialistFeedback = 'Koxlear implant protsessori sozlamalarini audiolog nazoratida ushlang va Ling 6 testini kunlik qo‘llang. — Dr. Nodira Rahimova';
+      specialistFeedback = `Koxlear implant protsessorini audiolog nazoratida ushlang va ${ageYears} yoshli ${genderTerm} bilan Ling 6 testini kunlik qo‘llang. — Dr. Nodira Rahimova`;
 
       modules = [
         {
@@ -966,10 +1266,10 @@ Qabul tartibi: ${med.frequency}, ${med.scheduledTimes.join(', ')} vaqtlarida (${
         },
       ];
     } else if (isF71) {
-      summaryText = `MKB-10 F71 (Aqliy zaiflikning o‘rta darajasi) bo‘yicha mustaqil hayot ko‘nikmalari (ADL), vazifani mayda qadamlarga bo‘lish (Task analysis) va vizual jadvallar dasturi ishlab chiqildi.`;
+      summaryText = `${child.firstName} (${genderTerm}, ${ageYears} yosh, ${ageCategory}) uchun MKB-10 F71 (Aqliy zaiflikning o‘rta darajasi) bo‘yicha mustaqil hayot ko‘nikmalari (ADL), vazifani mayda qadamlarga bo‘lish (Task analysis) va vizual jadvallar dasturi ishlab chiqildi.`;
       priorityDomains = ['Mustaqil hayot ko‘nikmalari', 'Kognitiv rivojlanish', 'Ijtimoiy rivojlanish'];
       specialistReferrals = ['MAXSUS_PEDAGOG', 'ERGOTERAPEVT', 'LOGOPED'];
-      specialistFeedback = 'Bosqichma-bosqich o‘rgatish (task analysis) va vizual jadvallar tavsiya etiladi. — Kamola Yusupova';
+      specialistFeedback = `Bosqichma-bosqich o‘rgatish (task analysis) va vizual jadvallar ${ageYears} yoshli ${genderTerm} uchun tavsiya etiladi. — Kamola Yusupova`;
 
       modules = [
         {
@@ -1027,10 +1327,10 @@ Qabul tartibi: ${med.frequency}, ${med.scheduledTimes.join(', ')} vaqtlarida (${
       ];
     } else {
       // MKB-10 F84 / ASD
-      summaryText = `MKB-10 F84 (Bolalar autizmi) bo‘yicha funktsional kommunikatsiya (AAC), ijtimoiy ko‘z bilan aloqa va sensor xotirjamlikka qaratilgan 30 kunlik reabilitatsiya dasturi shakllantirildi.`;
+      summaryText = `${child.firstName} (${genderTerm}, ${ageYears} yosh, ${ageCategory}) uchun MKB-10 F84 (Bolalar autizmi / ASD) bo‘yicha funktsional kommunikatsiya (AAC), ijtimoiy ko‘z bilan aloqa va sensor xotirjamlikka qaratilgan 30 kunlik reabilitatsiya dasturi shakllantirildi.`;
       priorityDomains = ['Nutq va kommunikatsiya', 'Ijtimoiy rivojlanish', 'Mustaqil hayot ko‘nikmalari'];
       specialistReferrals = ['LOGOPED', 'PSIXOLOG', 'NEVROLOG'];
-      specialistFeedback = 'Klinik tavsiyalarga to‘liq mos. Kunlik 15 daqiqalik AAC mashg‘ulotlariga ustuvorlik berilsin. — Dr. Nodira Rahimova';
+      specialistFeedback = `Klinik tavsiyalarga to‘liq mos. ${ageYears} yoshli ${genderTerm} uchun kunlik 15 daqiqalik AAC mashg‘ulotlariga ustuvorlik berilsin. — Dr. Nodira Rahimova`;
 
       modules = [
         {
