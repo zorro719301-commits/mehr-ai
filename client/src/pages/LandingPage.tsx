@@ -291,8 +291,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
 
           <div className="relative grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 text-xs">
             {[
-              { step: '01', title: 'Ro‘yxatdan o‘tish', desc: 'Ota-ona yoki mutaxassis shaxsiy hisobini yaratadi' },
-              { step: '02', title: 'Bola profilini kiritish', desc: 'Umumiy ma’lumotlar, rasm va ota-ona roziligi' },
+              { step: '01', title: 'Platformaga kirish', desc: 'Bosh administrator bergan login va parol orqali shaxsiy kabinetga kirish' },
+              { step: '02', title: 'Bolani ro‘yxatdan o‘tkazish', desc: '“Bolani ro‘yxatdan o‘tkazish” tugmasi orqali dastlabki ma’lumotlarni kiritish' },
               { step: '03', title: 'Tibbiy ma’lumotlar', desc: 'Mavjud tashxislar, dorilar va shifokor ko‘rsatmalari' },
               { step: '04', title: 'Raqamli baholash', desc: '6 ta soha bo‘yicha 0–5 balli mezonlarni belgilash' },
               { step: '05', title: 'AI tahlil boshlash', desc: 'AI ma’lumotlarni tahlil qilib, ehtiyojlarni saralaydi' },
