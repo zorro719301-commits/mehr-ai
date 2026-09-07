@@ -11,8 +11,14 @@ import {
   X,
   Edit,
   Shield,
-  MessageSquare
+  MessageSquare,
+  Pill,
+  Plus,
+  Activity,
+  Stethoscope
 } from 'lucide-react';
+import { clinicalStore, StoredChild, MedicationOrder } from '../services/clinicalStore.js';
+import { DoctorMedicationPrescriptionModal } from '../components/DoctorMedicationPrescriptionModal.js';
 
 export const SpecialistDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -25,8 +31,15 @@ export const SpecialistDashboard: React.FC = () => {
   const [reviewStatus, setReviewStatus] = useState<'APPROVED' | 'MODIFIED' | 'REJECTED'>('APPROVED');
   const [submitting, setSubmitting] = useState(false);
 
+  // Doctor prescription modal
+  const [isPrescriptionModalOpen, setIsPrescriptionModalOpen] = useState(false);
+  const [selectedChildForMed, setSelectedChildForMed] = useState<string>('child-madina');
+  const [childrenList, setChildrenList] = useState<StoredChild[]>([]);
+
   useEffect(() => {
     loadDashboard();
+    const children = clinicalStore.getChildren();
+    setChildrenList(children);
   }, []);
 
   const loadDashboard = async () => {
@@ -75,9 +88,20 @@ export const SpecialistDashboard: React.FC = () => {
             </span>
           </h2>
           <p className="text-xs text-slate-500 mt-1">
-            Xush kelibsiz, {user?.fullName}. AI yaratgan individual rejalarni ko‘rib chiqish va tasdiqlash markazi.
+            Xush kelibsiz, {user?.fullName || 'Dr. Nodira Rahimova'}. Reabilitatsiya dasturlari va dori monitoringi (Medication Adherence) markazi.
           </p>
         </div>
+
+        <button
+          onClick={() => {
+            setSelectedChildForMed(childrenList[0]?.id || 'child-madina');
+            setIsPrescriptionModalOpen(true);
+          }}
+          className="px-5 py-3 rounded-2xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs shadow-card flex items-center space-x-2 transition-all cursor-pointer"
+        >
+          <Plus className="w-4 h-4" />
+          <span>Yangi Dori Retsepti Kiritish</span>
+        </button>
       </div>
 
       {/* Metrics Row */}
@@ -85,9 +109,9 @@ export const SpecialistDashboard: React.FC = () => {
         <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-soft space-y-1">
           <span className="text-xs font-bold text-slate-400 uppercase">Jami Bolalar</span>
           <div className="text-3xl font-black text-slate-900">
-            {data?.metrics?.totalChildren || 3}
+            {childrenList.length || 4}
           </div>
-          <p className="text-xs text-slate-500">Platformada ro‘yxatdan o‘tgan</p>
+          <p className="text-xs text-slate-500">MKB-10 F70/G80/F71/F84/H90.3</p>
         </div>
 
         <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-soft space-y-1">
@@ -99,19 +123,91 @@ export const SpecialistDashboard: React.FC = () => {
         </div>
 
         <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-soft space-y-1">
-          <span className="text-xs font-bold text-slate-400 uppercase">So‘nggi Baholashlar</span>
-          <div className="text-3xl font-black text-brand-600">
-            {data?.metrics?.recentAssessments || 1}
+          <span className="text-xs font-bold text-slate-400 uppercase">Faol Dorilar</span>
+          <div className="text-3xl font-black text-primary-600">
+            3 ta
           </div>
-          <p className="text-xs text-slate-500">Yangi to‘ldirilgan anketalar</p>
+          <p className="text-xs text-slate-500">Shifokor nazoratida</p>
         </div>
 
         <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-soft space-y-1">
-          <span className="text-xs font-bold text-slate-400 uppercase">Xavf Belgilari</span>
+          <span className="text-xs font-bold text-slate-400 uppercase">Adherence Ko‘rsatkichi</span>
           <div className="text-3xl font-black text-emerald-600">
-            0 ta
+            92%
           </div>
-          <p className="text-xs text-slate-500">Barqaror holatda</p>
+          <p className="text-xs text-slate-500">O‘rtacha dori qabul intizomi</p>
+        </div>
+      </div>
+
+      {/* Children Clinical Dossier & Medication Management */}
+      <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-soft space-y-6">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+          <div>
+            <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+              <Stethoscope className="w-5 h-5 text-primary-600" />
+              <span>Biriktirilgan Bolalar va Funksional Holat (GMFCS, MACS, CFCS)</span>
+            </h3>
+            <p className="text-xs text-slate-500">
+              Har bir bolaning klinik holati, buyurilgan dori vositalari va rioya qilish darajasi
+            </p>
+          </div>
+        </div>
+
+        <div className="divide-y divide-slate-100">
+          {childrenList.map((ch) => {
+            const meds = clinicalStore.getMedications(ch.id);
+            const adherence = clinicalStore.calculateAdherenceScore(ch.id);
+            return (
+              <div key={ch.id} className="py-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div className="flex items-start space-x-3">
+                  <img
+                    src={ch.photoUrl}
+                    alt={ch.firstName}
+                    className="w-12 h-12 rounded-xl object-cover ring-2 ring-primary-100"
+                  />
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <h4 className="font-bold text-slate-900 text-sm">{ch.firstName} {ch.lastName}</h4>
+                      <span className="text-[11px] text-slate-500">({ch.region})</span>
+                    </div>
+                    <p className="text-xs text-slate-600 mt-0.5">
+                      {ch.medicalProfile?.doctorConclusions || ch.chiefComplaint}
+                    </p>
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-800 border border-blue-200">
+                        GMFCS {ch.gmfcsLevel || 'III'}
+                      </span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-50 text-indigo-800 border border-indigo-200">
+                        MACS {ch.macsLevel || 'III'}
+                      </span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
+                        CFCS {ch.cfcsLevel || 'III'}
+                      </span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-purple-50 text-purple-800 border border-purple-200">
+                        Adherence: {adherence.scorePercent}%
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-2 shrink-0 self-end md:self-auto">
+                  <span className="text-xs text-slate-500 font-medium mr-2">
+                    {meds.length} ta faol dori
+                  </span>
+                  <button
+                    onClick={() => {
+                      setSelectedChildForMed(ch.id);
+                      setIsPrescriptionModalOpen(true);
+                    }}
+                    className="px-3 py-1.5 bg-primary-50 text-primary-700 hover:bg-primary-100 rounded-xl text-xs font-bold border border-primary-200 transition-colors flex items-center"
+                  >
+                    <Pill className="w-3.5 h-3.5 mr-1" />
+                    Dori yozish
+                  </button>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -168,8 +264,8 @@ export const SpecialistDashboard: React.FC = () => {
             ))}
           </div>
         ) : (
-          <div className="text-center py-12 text-slate-400 text-sm">
-            Hozirda kutilayotgan tasdiqlar mavjud emas. Barcha rejalar klinik tasdiqlangan.
+          <div className="text-center py-8 text-slate-400 text-sm">
+            Hozirda kutilayotgan yangi paketlar mavjud emas. Barcha dasturlar tasdiqlangan.
           </div>
         )}
       </div>
@@ -236,6 +332,16 @@ export const SpecialistDashboard: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Prescription Modal */}
+      <DoctorMedicationPrescriptionModal
+        childId={selectedChildForMed}
+        isOpen={isPrescriptionModalOpen}
+        onClose={() => setIsPrescriptionModalOpen(false)}
+        onSaved={() => {
+          setChildrenList([...clinicalStore.getChildren()]);
+        }}
+      />
     </div>
   );
 };

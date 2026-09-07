@@ -18,9 +18,8 @@ export const translations = {
       logout: 'Chiqish',
     },
     actions: {
-      start: 'Boshlash',
+      start: 'Platformaga kirish',
       howItWorks: 'Qanday ishlaydi?',
-      loginAsSpecialist: 'Mutaxassis sifatida kirish',
       generatePackage: 'AI Individual Paketni shakllantirish',
       save: 'Saqlash',
       cancel: 'Bekor qilish',
@@ -57,9 +56,8 @@ export const translations = {
       logout: 'Выйти',
     },
     actions: {
-      start: 'Начать',
+      start: 'Войти на платформу',
       howItWorks: 'Как это работает?',
-      loginAsSpecialist: 'Войти как специалист',
       generatePackage: 'Сформировать AI-пакет развития',
       save: 'Сохранить',
       cancel: 'Отмена',
@@ -96,9 +94,8 @@ export const translations = {
       logout: 'Sign Out',
     },
     actions: {
-      start: 'Get Started',
+      start: 'Enter Platform',
       howItWorks: 'How it works?',
-      loginAsSpecialist: 'Sign in as Specialist',
       generatePackage: 'Generate AI Individual Package',
       save: 'Save',
       cancel: 'Cancel',

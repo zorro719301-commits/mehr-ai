@@ -4,6 +4,7 @@ import { LanguageProvider } from './context/LanguageContext.js';
 import { Navbar } from './components/Navbar.js';
 import { Footer } from './components/Footer.js';
 import { AiAssistantChatModal } from './components/AiAssistantChatModal.js';
+import { VoiceAssistantModal } from './components/VoiceAssistantModal.js';
 
 import { LandingPage } from './pages/LandingPage.js';
 import { ParentDashboard } from './pages/ParentDashboard.js';
@@ -15,12 +16,13 @@ import { SpecialistDashboard } from './pages/SpecialistDashboard.js';
 import { AdminPage } from './pages/AdminPage.js';
 import { AuthPage } from './pages/AuthPage.js';
 
-import { Sparkles, Heart } from 'lucide-react';
+import { Sparkles, Mic } from 'lucide-react';
 
 const MainApp: React.FC = () => {
   const { user, role } = useAuth();
   const [currentTab, setCurrentTab] = useState<string>('landing');
   const [isAiChatOpen, setIsAiChatOpen] = useState(false);
+  const [isVoiceAssistantOpen, setIsVoiceAssistantOpen] = useState(false);
 
   // If user logs in and was on 'landing' or 'login', switch to their appropriate dashboard
   React.useEffect(() => {
@@ -41,6 +43,7 @@ const MainApp: React.FC = () => {
         currentTab={currentTab}
         setCurrentTab={setCurrentTab}
         onOpenAiChat={() => setIsAiChatOpen(true)}
+        onOpenVoiceAssistant={() => setIsVoiceAssistantOpen(true)}
       />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-16">
@@ -68,20 +71,39 @@ const MainApp: React.FC = () => {
         )}
       </main>
 
-      {/* Floating MEHR AI Assistant Action Button */}
-      <button
-        onClick={() => setIsAiChatOpen(true)}
-        className="fixed bottom-8 right-6 z-50 px-4 py-3 rounded-full bg-gradient-to-r from-brand-600 via-indigo-600 to-emerald-600 text-white font-bold text-xs shadow-2xl hover:scale-105 active:scale-95 transition-all flex items-center space-x-2 border-2 border-white/50 animate-bounce cursor-pointer"
-        title="MEHR AI Yordamchi bilan suhbat"
-      >
-        <Sparkles className="w-4 h-4 text-amber-300 fill-amber-300" />
-        <span className="hidden sm:inline">MEHR AI Yordamchi</span>
-      </button>
+      {/* Floating Action Buttons: Voice Assistant + AI Chat */}
+      <div className="fixed bottom-8 right-6 z-50 flex items-center space-x-3">
+        {/* Natural Uzbek Voice Assistant Quick Trigger */}
+        <button
+          onClick={() => setIsVoiceAssistantOpen(true)}
+          className="px-4 py-3 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold text-xs shadow-2xl hover:scale-105 active:scale-95 transition-all flex items-center space-x-2 border-2 border-white/60 animate-pulse cursor-pointer"
+          title="MEHR AI Ovozli Yordamchi (O‘zbek tilida gaplashish)"
+        >
+          <Mic className="w-4 h-4 text-amber-300" />
+          <span className="hidden sm:inline">🎙 AI Ovoz</span>
+        </button>
+
+        {/* AI Assistant Chat Trigger */}
+        <button
+          onClick={() => setIsAiChatOpen(true)}
+          className="px-4 py-3 rounded-full bg-gradient-to-r from-brand-600 via-indigo-600 to-emerald-600 text-white font-bold text-xs shadow-2xl hover:scale-105 active:scale-95 transition-all flex items-center space-x-2 border-2 border-white/50 cursor-pointer"
+          title="MEHR AI Yordamchi bilan suhbat"
+        >
+          <Sparkles className="w-4 h-4 text-amber-300 fill-amber-300" />
+          <span className="hidden sm:inline">Chat AI</span>
+        </button>
+      </div>
 
       {/* AI Assistant Chat Modal */}
       <AiAssistantChatModal
         isOpen={isAiChatOpen}
         onClose={() => setIsAiChatOpen(false)}
+      />
+
+      {/* Voice Assistant Modal */}
+      <VoiceAssistantModal
+        isOpen={isVoiceAssistantOpen}
+        onClose={() => setIsVoiceAssistantOpen(false)}
       />
 
       <Footer />

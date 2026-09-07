@@ -1,5 +1,5 @@
 import React from 'react';
-import { Heart, ShieldCheck, AlertCircle, PhoneCall } from 'lucide-react';
+import { ShieldCheck, AlertCircle, PhoneCall } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext.js';
 
 export const Footer: React.FC = () => {
@@ -24,9 +24,7 @@ export const Footer: React.FC = () => {
       <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 rounded-xl bg-brand-600 flex items-center justify-center text-white">
-              <Heart className="w-4 h-4 fill-white" />
-            </div>
+            <img src="/images/logo-icon.png" alt="MEHR AI" className="w-8 h-8 object-contain" />
             <div>
               <span className="text-base font-bold text-slate-900">MEHR AI</span>
               <p className="text-xs text-slate-500">{t.slogan}</p>

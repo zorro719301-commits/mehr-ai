@@ -164,6 +164,10 @@ model Child {
   consents       Consent[]
   aiRequests     AiRequest[]
   therapySessions TherapySession[]
+  medicationOrders MedicationOrder[]
+  medicationLogs   MedicationDoseLog[]
+  sideEffects      MedicationSideEffect[]
+  gmfcsAssessments FunctionalAssessmentGmfcs[]
 }
 
 model ChildParent {
@@ -785,3 +789,89 @@ model OfflineSyncQueue {
 
   user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
+
+// -------------------------------------------------------------
+// 14. MEDICATION MANAGEMENT & AI ADHERENCE (Sections 90–136)
+// -------------------------------------------------------------
+
+model MedicationOrder {
+  id                     String                 @id @default(uuid())
+  childId                String
+  name                   String
+  activeIngredient       String?
+  form                   String                 @default("tablets") // tablets, syrup, drops, injection
+  dosage                 String                 // e.g. "5 mg"
+  concentration          String?
+  route                  String                 @default("per os")
+  frequency              String                 // e.g. "Kuniga 2 marta"
+  scheduledTimesJson     String                 // JSON array: ["08:30", "19:30"]
+  foodRelation           String                 @default("Ovqatdan so‘ng")
+  startDate              DateTime               @default(now())
+  endDate                DateTime?
+  courseDurationDays     Int                    @default(30)
+  purpose                String
+  instructions           String?
+  prescribingDoctorName  String
+  prescribingDoctorId    String?
+  specialty              String?                @default("Bolalar nevrologi")
+  status                 String                 @default("ACTIVE") // DRAFT, PENDING_REVIEW, APPROVED, ACTIVE, PAUSED, COMPLETED, DISCONTINUED
+  requiresDoubleApproval Boolean                @default(false)
+  secondApproverName     String?
+  createdAt              DateTime               @default(now())
+  updatedAt              DateTime               @updatedAt
+
+  child                  Child                  @relation(fields: [childId], references: [id], onDelete: Cascade)
+  doseLogs               MedicationDoseLog[]
+  sideEffects            MedicationSideEffect[]
+}
+
+model MedicationDoseLog {
+  id             String          @id @default(uuid())
+  childId        String
+  medicationId   String
+  medicationName String
+  dosage         String
+  scheduledTime  String
+  actualTime     String?
+  date           String          // YYYY-MM-DD
+  status         String          @default("TAKEN") // TAKEN, MISSED, POSTPONED
+  recordedBy     String
+  notes          String?
+  createdAt      DateTime        @default(now())
+
+  child          Child           @relation(fields: [childId], references: [id], onDelete: Cascade)
+  medication     MedicationOrder @relation(fields: [medicationId], references: [id], onDelete: Cascade)
+}
+
+model MedicationSideEffect {
+  id                 String          @id @default(uuid())
+  childId            String
+  medicationId       String
+  symptom            String
+  onsetTimestamp     DateTime        @default(now())
+  severity           String          @default("MILD") // MILD, MODERATE, SEVERE_RED_FLAG
+  isRedFlag          Boolean         @default(false)
+  description        String?
+  parentContact      String?
+  doctorReviewed     Boolean         @default(false)
+  emergencyTriggered Boolean         @default(false)
+  createdAt          DateTime        @default(now())
+
+  child              Child           @relation(fields: [childId], references: [id], onDelete: Cascade)
+  medication         MedicationOrder @relation(fields: [medicationId], references: [id], onDelete: Cascade)
+}
+
+model FunctionalAssessmentGmfcs {
+  id              String   @id @default(uuid())
+  childId         String
+  gmfcsLevel      String   // I, II, III, IV, V
+  macsLevel       String   // I, II, III, IV, V
+  cfcsLevel       String   // I, II, III, IV, V
+  assessedBy      String   // DOCTOR, SPECIALIST, PARENT_INITIAL
+  assessorName    String?
+  clinicalNotes   String?
+  createdAt       DateTime @default(now())
+
+  child           Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
+}
+

@@ -11,13 +11,18 @@ import {
   Sparkles,
   Heart,
   ChevronRight,
-  Play,
   Check,
   MessageSquare,
   Smile,
-  ShieldAlert,
-  ArrowRight
+  Pill,
+  Mic,
+  Activity,
+  Stethoscope
 } from 'lucide-react';
+import { MedicationDashboard } from '../components/MedicationDashboard.js';
+import { DailyCareTimeline } from '../components/DailyCareTimeline.js';
+import { DoctorMedicationPrescriptionModal } from '../components/DoctorMedicationPrescriptionModal.js';
+import { VoiceAssistantModal } from '../components/VoiceAssistantModal.js';
 
 interface ParentDashboardProps {
   onNavigate: (tab: string) => void;
@@ -28,6 +33,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({ onNavigate, on
   const { activeChild } = useAuth();
   const { t } = useLanguage();
 
+  const [activeTab, setActiveTab] = useState<'overview' | 'medication' | 'timeline'>('overview');
   const [activePackage, setActivePackage] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [todayTask, setTodayTask] = useState<any>(null);
@@ -40,6 +46,10 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({ onNavigate, on
   const [parentNotes, setParentNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [hasCompletedToday, setHasCompletedToday] = useState(false);
+
+  // Voice Assistant and Doctor modal state
+  const [isVoiceAssistantOpen, setIsVoiceAssistantOpen] = useState(false);
+  const [isDoctorPrescriptionOpen, setIsDoctorPrescriptionOpen] = useState(false);
 
   useEffect(() => {
     if (activeChild) {
@@ -54,7 +64,6 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({ onNavigate, on
       if (res.success && res.data) {
         setActivePackage(res.data);
         if (res.data.dailyTasks && res.data.dailyTasks.length > 0) {
-          // Find first uncompleted or day 1 task
           const task = res.data.dailyTasks[0];
           setTodayTask(task);
           if (task.results && task.results.length > 0) {
@@ -115,9 +124,13 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({ onNavigate, on
     );
   }
 
+  const childGmfcs = (activeChild as any).gmfcsLevel || 'III';
+  const childMacs = (activeChild as any).macsLevel || 'III';
+  const childCfcs = (activeChild as any).cfcsLevel || 'III';
+
   return (
     <div className="space-y-8">
-      {/* 1. CHILD HEADER CARD */}
+      {/* 1. CHILD HEADER CARD WITH FUNCTIONAL CLASSIFICATIONS */}
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-soft flex flex-col md:flex-row items-center justify-between gap-6">
         <div className="flex flex-col sm:flex-row items-center gap-5 text-center sm:text-left">
           <img
@@ -135,12 +148,28 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({ onNavigate, on
               </span>
             </div>
 
-            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-1.5 text-xs text-slate-500 font-medium">
+            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 text-xs text-slate-500 font-medium">
               <span>Tug‘ilgan sana: {new Date(activeChild.dateOfBirth).toLocaleDateString()}</span>
               <span className="text-emerald-700 font-semibold">
                 Tashxis: {activeChild.conditions && activeChild.conditions.length > 0
                   ? activeChild.conditions.map((c: any) => c.condition?.name || c.name || c).join(', ')
-                  : (activeChild.medicalProfile?.doctorConclusions || 'MKB-10 F84 (Autizm spektri)')}
+                  : (activeChild.medicalProfile?.doctorConclusions || 'MKB-10 F70 + G80 III-IV')}
+              </span>
+            </div>
+
+            {/* Standardized Functional Classifications Badges */}
+            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 pt-1">
+              <span className="text-[11px] font-extrabold px-2.5 py-0.5 rounded-md bg-blue-50 text-blue-800 border border-blue-200 flex items-center shadow-xs">
+                <Stethoscope className="w-3 h-3 mr-1 text-blue-600" />
+                GMFCS {childGmfcs} (Motor)
+              </span>
+              <span className="text-[11px] font-extrabold px-2.5 py-0.5 rounded-md bg-indigo-50 text-indigo-800 border border-indigo-200 flex items-center shadow-xs">
+                <Activity className="w-3 h-3 mr-1 text-indigo-600" />
+                MACS {childMacs} (Qo‘l)
+              </span>
+              <span className="text-[11px] font-extrabold px-2.5 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center shadow-xs">
+                <MessageSquare className="w-3 h-3 mr-1 text-emerald-600" />
+                CFCS {childCfcs} (Muloqot)
               </span>
             </div>
 
@@ -152,192 +181,258 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({ onNavigate, on
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+        {/* Action Buttons */}
+        <div className="flex flex-wrap items-center justify-center gap-3 w-full md:w-auto">
+          <button
+            onClick={() => setIsVoiceAssistantOpen(true)}
+            className="px-4 py-3 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:brightness-110 text-white font-bold text-xs shadow-card flex items-center justify-center space-x-1.5"
+            title="Tabiiy o‘zbek tilidagi ovozli AI yordamchi"
+          >
+            <Mic className="w-4 h-4 text-amber-300" />
+            <span>🎙 Ovozli AI</span>
+          </button>
           <button
             onClick={() => onNavigate('assessment')}
-            className="px-5 py-3 rounded-2xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-bold text-xs shadow-sm flex items-center justify-center space-x-1.5"
+            className="px-4 py-3 rounded-2xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-bold text-xs shadow-sm flex items-center justify-center space-x-1.5"
           >
             <span>Qayta baholash</span>
           </button>
           <button
             onClick={onOpenAiChat}
-            className="px-5 py-3 rounded-2xl bg-gradient-to-r from-brand-600 to-indigo-600 hover:brightness-110 text-white font-bold text-xs shadow-card flex items-center justify-center space-x-1.5"
+            className="px-4 py-3 rounded-2xl bg-gradient-to-r from-brand-600 to-emerald-600 hover:brightness-110 text-white font-bold text-xs shadow-card flex items-center justify-center space-x-1.5"
           >
             <Sparkles className="w-4 h-4 text-amber-300 fill-amber-300" />
-            <span>MEHR AI Yordamchi</span>
+            <span>Chat AI</span>
           </button>
         </div>
       </div>
 
-      {/* 2. TODAY'S TARGET & 15-MINUTE EXERCISE HERO */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left 2 Cols: Today's 15-Minute Session */}
-        <div className="lg:col-span-2 bg-gradient-to-br from-brand-600 via-brand-700 to-indigo-800 text-white rounded-3xl p-6 sm:p-8 shadow-card relative overflow-hidden flex flex-col justify-between">
-          <div className="space-y-4 z-10">
-            <div className="flex items-center justify-between">
-              <span className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-white/20 text-white text-xs font-extrabold uppercase tracking-wide backdrop-blur-md">
-                <Clock className="w-3.5 h-3.5" />
-                <span>Bugungi 15 daqiqalik mashg‘ulot</span>
-              </span>
-              {hasCompletedToday ? (
-                <span className="inline-flex items-center space-x-1 px-3 py-1 rounded-full bg-emerald-400 text-emerald-950 text-xs font-bold shadow-sm">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>Bugun bajarildi!</span>
-                </span>
-              ) : (
-                <span className="text-xs text-brand-100 font-semibold">Kutilmoqda</span>
-              )}
-            </div>
+      {/* DASHBOARD NAVIGATION PILLS */}
+      <div className="flex items-center space-x-2 border-b border-slate-200/80 pb-3">
+        <button
+          onClick={() => setActiveTab('overview')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 ${
+            activeTab === 'overview'
+              ? 'bg-brand-600 text-white shadow-sm'
+              : 'text-slate-600 hover:bg-slate-100'
+          }`}
+        >
+          <Activity className="w-4 h-4" />
+          <span>🏃 15-Daqiqalik Mashg‘ulot & Reja</span>
+        </button>
 
-            {todayTask ? (
-              <div className="space-y-2">
-                <h3 className="text-2xl sm:text-3xl font-black text-white leading-snug">
-                  {todayTask.title}
-                </h3>
-                <p className="text-sm text-brand-100 leading-relaxed font-normal">
-                  {todayTask.instructions}
-                </p>
-                <div className="pt-2 flex flex-wrap gap-2 text-xs">
-                  <div className="bg-white/10 px-3 py-1.5 rounded-xl backdrop-blur-md">
-                    <span className="text-brand-200">Kerakli material:</span> {todayTask.materials || 'AAC kartochkasi, stakan'}
-                  </div>
-                  <div className="bg-white/10 px-3 py-1.5 rounded-xl backdrop-blur-md">
-                    <span className="text-brand-200">Davomiyligi:</span> 15 daqiqa
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="text-brand-100 py-4">
-                Hozirda yangi mashg‘ulot shakllanmoqda. AI Individual paketni qayta tekshiring.
-              </div>
-            )}
-          </div>
+        <button
+          onClick={() => setActiveTab('medication')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 ${
+            activeTab === 'medication'
+              ? 'bg-brand-600 text-white shadow-sm'
+              : 'text-slate-600 hover:bg-slate-100'
+          }`}
+        >
+          <Pill className="w-4 h-4" />
+          <span>💊 Dori Vositalari & Adherence Nazorati</span>
+        </button>
 
-          <div className="pt-6 border-t border-white/20 mt-6 flex flex-wrap items-center justify-between gap-4 z-10">
-            <div className="text-xs text-brand-200 italic max-w-md">
-              💡 Ota-ona uchun maslahat: {todayTask?.parentTip || 'Bolani majburlamang, kichik urinishni ham darhol quchoqlab rag‘batlantiring.'}
-            </div>
-
-            <button
-              onClick={() => setIsModalOpen(true)}
-              className="px-6 py-3 rounded-2xl bg-white hover:bg-brand-50 text-brand-800 font-extrabold text-sm shadow-lg flex items-center space-x-2 transition-all hover:scale-105"
-            >
-              <Check className="w-4 h-4 text-brand-600 stroke-[3]" />
-              <span>{hasCompletedToday ? 'Natijani yangilash' : 'Natijani qayd etish'}</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Right Col: Quick Clinical Status & Actions */}
-        <div className="space-y-6">
-          {/* Active Package Status Card */}
-          <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-soft space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-400">FAOL INDIVIDUAL REJA</span>
-              <span className="text-xs font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                Tasdiqlangan
-              </span>
-            </div>
-
-            <div className="space-y-2">
-              <h4 className="font-extrabold text-slate-800 text-sm">
-                {activePackage?.title || '30 Kunlik MEHR Paketi'}
-              </h4>
-              <p className="text-xs text-slate-600 line-clamp-3 leading-relaxed">
-                {activePackage?.summary || 'Nutq, AAC va sensorikaga yo‘naltirilgan reja.'}
-              </p>
-            </div>
-
-            {activePackage?.specialistFeedback && (
-              <div className="p-3 bg-emerald-50/70 border border-emerald-200 rounded-2xl text-xs text-emerald-900 space-y-1">
-                <div className="font-bold flex items-center gap-1 text-emerald-800">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Mutaxassis tavsiyasi:</span>
-                </div>
-                <p className="italic text-[11px] leading-relaxed">“{activePackage.specialistFeedback}”</p>
-              </div>
-            )}
-
-            <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs font-semibold">
-              <button
-                onClick={() => onNavigate('progress')}
-                className="text-brand-600 hover:text-brand-700 flex items-center space-x-1"
-              >
-                <span>To‘liq reja va grafiklar</span>
-                <ChevronRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </div>
-
-          {/* Quick Actions Shortcuts */}
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              onClick={() => onNavigate('aac')}
-              className="p-4 rounded-2xl bg-white border border-slate-200 hover:border-brand-400 hover:shadow-md transition-all text-left space-y-2 group"
-            >
-              <div className="w-8 h-8 rounded-xl bg-blue-50 text-brand-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <MessageSquare className="w-4 h-4" />
-              </div>
-              <div className="text-xs font-bold text-slate-800">AAC Doskasi</div>
-              <div className="text-[10px] text-slate-500">Ovozli kartochkalar</div>
-            </button>
-
-            <button
-              onClick={() => onNavigate('behavior')}
-              className="p-4 rounded-2xl bg-white border border-slate-200 hover:border-amber-400 hover:shadow-md transition-all text-left space-y-2 group"
-            >
-              <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <Smile className="w-4 h-4" />
-              </div>
-              <div className="text-xs font-bold text-slate-800">Xulq Kundaligi</div>
-              <div className="text-[10px] text-slate-500">ABC qaydlari & tahlil</div>
-            </button>
-          </div>
-        </div>
+        <button
+          onClick={() => setActiveTab('timeline')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 ${
+            activeTab === 'timeline'
+              ? 'bg-brand-600 text-white shadow-sm'
+              : 'text-slate-600 hover:bg-slate-100'
+          }`}
+        >
+          <Clock className="w-4 h-4" />
+          <span>⏰ 24-Soatlik Bola Parvarish Jadvali</span>
+        </button>
       </div>
 
-      {/* 3. 4-WEEK PROGRESSION MODULES OVERVIEW */}
-      {activePackage && activePackage.modules && (
-        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-soft space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <div>
-              <h3 className="text-lg font-bold text-slate-900">30 Kunlik Dastur Modullari (Haftalik)</h3>
-              <p className="text-xs text-slate-500">Har hafta bolaning ko‘nikmasiga qarab murakkablashtiriladi</p>
-            </div>
-            <span className="text-xs font-bold px-3 py-1 bg-brand-50 text-brand-700 rounded-full border border-brand-200">
-              Muddati: 30 kun
-            </span>
-          </div>
+      {/* TAB CONTENT: MEDICATION DASHBOARD */}
+      {activeTab === 'medication' && (
+        <MedicationDashboard
+          childId={activeChild.id}
+          onOpenDoctorModal={() => setIsDoctorPrescriptionOpen(true)}
+        />
+      )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {activePackage.modules.map((m: any, idx: number) => (
-              <div
-                key={idx}
-                className={`p-5 rounded-2xl border transition-all ${
-                  idx === 0
-                    ? 'bg-brand-50/50 border-brand-300 ring-2 ring-brand-200'
-                    : 'bg-slate-50/60 border-slate-200'
-                }`}
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-xs font-extrabold text-brand-700 uppercase">
-                    {m.weekNumber}-hafta
+      {/* TAB CONTENT: DAILY TIMELINE */}
+      {activeTab === 'timeline' && (
+        <DailyCareTimeline childId={activeChild.id} />
+      )}
+
+      {/* TAB CONTENT: OVERVIEW (ORIGINAL REHABILITATION PROGRAM) */}
+      {activeTab === 'overview' && (
+        <>
+          {/* 2. TODAY'S TARGET & 15-MINUTE EXERCISE HERO */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Left 2 Cols: Today's 15-Minute Session */}
+            <div className="lg:col-span-2 bg-gradient-to-br from-brand-600 via-brand-700 to-indigo-800 text-white rounded-3xl p-6 sm:p-8 shadow-card relative overflow-hidden flex flex-col justify-between">
+              <div className="space-y-4 z-10">
+                <div className="flex items-center justify-between">
+                  <span className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-white/20 text-white text-xs font-extrabold uppercase tracking-wide backdrop-blur-md">
+                    <Clock className="w-3.5 h-3.5" />
+                    <span>Bugungi 15 daqiqalik mashg‘ulot</span>
                   </span>
-                  {idx === 0 && (
-                    <span className="text-[10px] bg-brand-600 text-white font-bold px-2 py-0.5 rounded-full">
-                      Hozirgi
+                  {hasCompletedToday ? (
+                    <span className="inline-flex items-center space-x-1 px-3 py-1 rounded-full bg-emerald-400 text-emerald-950 text-xs font-bold shadow-sm">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span>Bugun bajarildi!</span>
                     </span>
+                  ) : (
+                    <span className="text-xs text-brand-100 font-semibold">Kutilmoqda</span>
                   )}
                 </div>
-                <h4 className="font-bold text-sm text-slate-800 mb-2">{m.focusArea}</h4>
-                <p className="text-xs text-slate-600 mb-3 leading-relaxed">{m.weeklyGoal}</p>
-                <div className="text-[11px] text-slate-500 bg-white p-2 rounded-xl border border-slate-200/80">
-                  <span className="font-semibold text-slate-700">Kutilayotgan natija:</span> {m.expectedOutcome}
+
+                {todayTask ? (
+                  <div className="space-y-2">
+                    <h3 className="text-2xl sm:text-3xl font-black text-white leading-snug">
+                      {todayTask.title}
+                    </h3>
+                    <p className="text-sm text-brand-100 leading-relaxed font-normal">
+                      {todayTask.instructions}
+                    </p>
+                    <div className="pt-2 flex flex-wrap gap-2 text-xs">
+                      <div className="bg-white/10 px-3 py-1.5 rounded-xl backdrop-blur-md">
+                        <span className="text-brand-200">Kerakli material:</span> {todayTask.materials || 'AAC kartochkasi, stakan'}
+                      </div>
+                      <div className="bg-white/10 px-3 py-1.5 rounded-xl backdrop-blur-md">
+                        <span className="text-brand-200">Davomiyligi:</span> 15 daqiqa
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-brand-100 py-4">
+                    Hozirda yangi mashg‘ulot shakllanmoqda. AI Individual paketni qayta tekshiring.
+                  </div>
+                )}
+              </div>
+
+              <div className="pt-6 border-t border-white/20 mt-6 flex flex-wrap items-center justify-between gap-4 z-10">
+                <div className="text-xs text-brand-200 italic max-w-md">
+                  💡 Ota-ona uchun maslahat: {todayTask?.parentTip || 'Bolani majburlamang, kichik urinishni ham darhol quchoqlab rag‘batlantiring.'}
+                </div>
+
+                <button
+                  onClick={() => setIsModalOpen(true)}
+                  className="px-6 py-3 rounded-2xl bg-white hover:bg-brand-50 text-brand-800 font-extrabold text-sm shadow-lg flex items-center space-x-2 transition-all hover:scale-105"
+                >
+                  <Check className="w-4 h-4 text-brand-600 stroke-[3]" />
+                  <span>{hasCompletedToday ? 'Natijani yangilash' : 'Natijani qayd etish'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Right Col: Quick Clinical Status & Actions */}
+            <div className="space-y-6">
+              {/* Active Package Status Card */}
+              <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-soft space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-400">FAOL INDIVIDUAL REJA</span>
+                  <span className="text-xs font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    Tasdiqlangan
+                  </span>
+                </div>
+
+                <div className="space-y-2">
+                  <h4 className="font-extrabold text-slate-800 text-sm">
+                    {activePackage?.title || '30 Kunlik MEHR Paketi'}
+                  </h4>
+                  <p className="text-xs text-slate-600 line-clamp-3 leading-relaxed">
+                    {activePackage?.summary || 'Nutq, AAC va sensorikaga yo‘naltirilgan reja.'}
+                  </p>
+                </div>
+
+                {activePackage?.specialistFeedback && (
+                  <div className="p-3 bg-emerald-50/70 border border-emerald-200 rounded-2xl text-xs text-emerald-900 space-y-1">
+                    <div className="font-bold flex items-center gap-1 text-emerald-800">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Mutaxassis tavsiyasi:</span>
+                    </div>
+                    <p className="italic text-[11px] leading-relaxed">“{activePackage.specialistFeedback}”</p>
+                  </div>
+                )}
+
+                <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs font-semibold">
+                  <button
+                    onClick={() => onNavigate('progress')}
+                    className="text-brand-600 hover:text-brand-700 flex items-center space-x-1"
+                  >
+                    <span>To‘liq reja va grafiklar</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               </div>
-            ))}
+
+              {/* Quick Actions Shortcuts */}
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => onNavigate('aac')}
+                  className="p-4 rounded-2xl bg-white border border-slate-200 hover:border-brand-400 hover:shadow-md transition-all text-left space-y-2 group"
+                >
+                  <div className="w-8 h-8 rounded-xl bg-blue-50 text-brand-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <MessageSquare className="w-4 h-4" />
+                  </div>
+                  <div className="text-xs font-bold text-slate-800">AAC Doskasi</div>
+                  <div className="text-[10px] text-slate-500">Ovozli kartochkalar</div>
+                </button>
+
+                <button
+                  onClick={() => onNavigate('behavior')}
+                  className="p-4 rounded-2xl bg-white border border-slate-200 hover:border-amber-400 hover:shadow-md transition-all text-left space-y-2 group"
+                >
+                  <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Smile className="w-4 h-4" />
+                  </div>
+                  <div className="text-xs font-bold text-slate-800">Xulq Kundaligi</div>
+                  <div className="text-[10px] text-slate-500">ABC qaydlari & tahlil</div>
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
+
+          {/* 3. 4-WEEK PROGRESSION MODULES OVERVIEW */}
+          {activePackage && activePackage.modules && (
+            <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-soft space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900">30 Kunlik Dastur Modullari (Haftalik)</h3>
+                  <p className="text-xs text-slate-500">Har hafta bolaning ko‘nikmasiga qarab murakkablashtiriladi</p>
+                </div>
+                <span className="text-xs font-bold px-3 py-1 bg-brand-50 text-brand-700 rounded-full border border-brand-200">
+                  Muddati: 30 kun
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {activePackage.modules.map((m: any, idx: number) => (
+                  <div
+                    key={idx}
+                    className={`p-5 rounded-2xl border transition-all ${
+                      idx === 0
+                        ? 'bg-brand-50/50 border-brand-300 ring-2 ring-brand-200'
+                        : 'bg-slate-50/60 border-slate-200'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-xs font-extrabold text-brand-700 uppercase">
+                        {m.weekNumber}-hafta
+                      </span>
+                      {idx === 0 && (
+                        <span className="text-[10px] bg-brand-600 text-white font-bold px-2 py-0.5 rounded-full">
+                          Hozirgi
+                        </span>
+                      )}
+                    </div>
+                    <h4 className="font-bold text-sm text-slate-800 mb-2">{m.focusArea}</h4>
+                    <p className="text-xs text-slate-600 mb-3 leading-relaxed">{m.weeklyGoal}</p>
+                    <div className="text-[11px] text-slate-500 bg-white p-2 rounded-xl border border-slate-200/80">
+                      <span className="font-semibold text-slate-700">Kutilayotgan natija:</span> {m.expectedOutcome}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {/* RESULT SUBMISSION MODAL */}
@@ -454,6 +549,22 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({ onNavigate, on
           </div>
         </div>
       )}
+
+      {/* VOICE ASSISTANT MODAL */}
+      <VoiceAssistantModal
+        isOpen={isVoiceAssistantOpen}
+        onClose={() => setIsVoiceAssistantOpen(false)}
+      />
+
+      {/* DOCTOR MEDICATION PRESCRIPTION MODAL */}
+      <DoctorMedicationPrescriptionModal
+        childId={activeChild.id}
+        isOpen={isDoctorPrescriptionOpen}
+        onClose={() => setIsDoctorPrescriptionOpen(false)}
+        onSaved={() => {
+          // Trigger refresh if needed
+        }}
+      />
     </div>
   );
 };

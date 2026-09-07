@@ -40,7 +40,6 @@ interface AuthContextType {
   login: (email: string, pass: string) => Promise<boolean>;
   logout: () => void;
   refreshUserData: () => Promise<void>;
-  quickLogin: (role: 'PARENT' | 'SPECIALIST' | 'ADMIN') => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -122,16 +121,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setChildrenList([]);
   };
 
-  const quickLogin = async (targetRole: 'PARENT' | 'SPECIALIST' | 'ADMIN') => {
-    if (targetRole === 'PARENT') {
-      await login('dilnoza@mehr.uz', 'Password123!');
-    } else if (targetRole === 'SPECIALIST') {
-      await login('dr.nodira@mehr.uz', 'Password123!');
-    } else if (targetRole === 'ADMIN') {
-      await login('admin@mehr.uz', 'AdminSecret2026!');
-    }
-  };
-
   return (
     <AuthContext.Provider
       value={{
@@ -146,7 +135,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         login,
         logout,
         refreshUserData,
-        quickLogin,
       }}
     >
       {children}

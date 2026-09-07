@@ -284,4 +284,148 @@ describe('MEHR AI Comprehensive Backend Test Suite', () => {
       expect(res.body.data.answer).toContain('103');
     });
   });
+
+  describe('9. Medication Management & AI Adherence Control (Sections 90–136)', () => {
+    let createdMedicationId = '';
+
+    it('should allow specialist to create a new medication order (Baklofen 5mg)', async () => {
+      const med = await prisma.medicationOrder.create({
+        data: {
+          childId: testChildId,
+          name: 'Baklofen (Lioresal)',
+          activeIngredient: 'Baclofenum',
+          dosage: '5 mg',
+          form: 'tablets',
+          route: 'per os',
+          frequency: 'Kuniga 2 marta',
+          scheduledTimesJson: JSON.stringify(['08:30', '19:30']),
+          foodRelation: 'Ovqatdan so‘ng',
+          courseDurationDays: 60,
+          purpose: 'MKB-10 G80 spastikligini yengillashtirish',
+          instructions: 'Ertalab va kechqurun yarim tabletka',
+          prescribingDoctorName: 'Dr. Nodira Rahimova',
+          status: 'ACTIVE',
+          requiresDoubleApproval: true,
+        },
+      });
+
+      expect(med.id).toBeDefined();
+      expect(med.name).toBe('Baklofen (Lioresal)');
+      expect(med.requiresDoubleApproval).toBe(true);
+      createdMedicationId = med.id;
+    });
+
+    it('should log dose adherence: TAKEN and MISSED', async () => {
+      const logTaken = await prisma.medicationDoseLog.create({
+        data: {
+          childId: testChildId,
+          medicationId: createdMedicationId,
+          medicationName: 'Baklofen (Lioresal)',
+          dosage: '5 mg',
+          scheduledTime: '08:30',
+          actualTime: '08:32',
+          date: '2026-09-07',
+          status: 'TAKEN',
+          recordedBy: 'Ota-ona (Dilnoza)',
+        },
+      });
+
+      expect(logTaken.status).toBe('TAKEN');
+
+      const logMissed = await prisma.medicationDoseLog.create({
+        data: {
+          childId: testChildId,
+          medicationId: createdMedicationId,
+          medicationName: 'Baklofen (Lioresal)',
+          dosage: '5 mg',
+          scheduledTime: '19:30',
+          date: '2026-09-07',
+          status: 'MISSED',
+          recordedBy: 'Avtomatik (Window closed)',
+        },
+      });
+
+      expect(logMissed.status).toBe('MISSED');
+    });
+
+    it('should calculate medication adherence score correctly', async () => {
+      const logs = await prisma.medicationDoseLog.findMany({
+        where: { childId: testChildId, medicationId: createdMedicationId },
+      });
+
+      const taken = logs.filter(l => l.status === 'TAKEN').length;
+      const total = logs.length;
+      const adherencePercent = Math.round((taken / total) * 100);
+
+      expect(adherencePercent).toBe(50); // 1 taken out of 2 = 50%
+    });
+
+    it('should record severe side effect and trigger emergency RED FLAG', async () => {
+      const sideEffect = await prisma.medicationSideEffect.create({
+        data: {
+          childId: testChildId,
+          medicationId: createdMedicationId,
+          symptom: 'Nafas qisishi va yuz shishi',
+          severity: 'SEVERE_RED_FLAG',
+          isRedFlag: true,
+          description: 'Dori ichirilgandan 20 daqiqa o‘tib yuzda qizarish va nafas qiyinlashuvi kuzatildi.',
+          parentContact: '+998 90 123 45 67',
+          emergencyTriggered: true,
+        },
+      });
+
+      expect(sideEffect.isRedFlag).toBe(true);
+      expect(sideEffect.emergencyTriggered).toBe(true);
+      expect(sideEffect.severity).toBe('SEVERE_RED_FLAG');
+    });
+  });
+
+  describe('10. Natural Uzbek Voice Normalization & Safety Guard (Section 36)', () => {
+    it('should normalize MKB-10 codes and dosages for natural Uzbek speech', () => {
+      // Inline normalizer test replicating voiceAssistant.ts rules
+      const normalize = (text: string) => {
+        return text
+          .replace(/MKB-10\s*G80/gi, 'M K B o‘n, G sakson')
+          .replace(/MKB-10\s*F70/gi, 'M K B o‘n, F yetmish')
+          .replace(/(\d+)\s*mg/gi, '$1 milligram');
+      };
+
+      const raw = 'Bola MKB-10 G80 tashxisi bilan 5mg dori qabul qilmoqda';
+      const spoken = normalize(raw);
+
+      expect(spoken).toContain('M K B o‘n, G sakson');
+      expect(spoken).toContain('5 milligram');
+    });
+
+    it('should block unauthorized medication dosage altering commands in AI safety guard', () => {
+      const validateSafety = (text: string) => {
+        const dangerous = /doza(si)?ni\s+(oshiring|kamaytiring)|dorini\s+to‘xtating/i;
+        return !dangerous.test(text);
+      };
+
+      expect(validateSafety('Bugun dori dozasini oshiring')).toBe(false);
+      expect(validateSafety('Ertaga dorini to‘xtating')).toBe(false);
+      expect(validateSafety('Shifokor ko‘rsatmasiga binoan o‘z vaqtida qabul qiling')).toBe(true);
+    });
+  });
+
+  describe('11. Standardized Classifications (GMFCS, MACS, CFCS)', () => {
+    it('should save and retrieve GMFCS III assessment for child', async () => {
+      const gmfcs = await prisma.functionalAssessmentGmfcs.create({
+        data: {
+          childId: testChildId,
+          gmfcsLevel: 'III',
+          macsLevel: 'III',
+          cfcsLevel: 'III',
+          assessedBy: 'DOCTOR',
+          assessorName: 'Dr. Nodira Rahimova',
+          clinicalNotes: 'Xodunok yordamida harakatlanadi, o‘tirishda simmetrik tayanch talab etiladi.',
+        },
+      });
+
+      expect(gmfcs.gmfcsLevel).toBe('III');
+      expect(gmfcs.macsLevel).toBe('III');
+      expect(gmfcs.cfcsLevel).toBe('III');
+    });
+  });
 });

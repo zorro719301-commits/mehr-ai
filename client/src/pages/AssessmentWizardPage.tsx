@@ -138,6 +138,11 @@ export const AssessmentWizardPage: React.FC<AssessmentWizardPageProps> = ({ onNa
     activeChild?.medicalProfile?.precautionsContraindications || 'Baland shovqinli stimullardan ehtiyot bo‘lish'
   );
 
+  // Xalqaro Funksional Tasniflar (GMFCS, MACS, CFCS)
+  const [gmfcsLevel, setGmfcsLevel] = useState<string>((activeChild as any)?.gmfcsLevel || 'III');
+  const [macsLevel, setMacsLevel] = useState<string>((activeChild as any)?.macsLevel || 'III');
+  const [cfcsLevel, setCfcsLevel] = useState<string>((activeChild as any)?.cfcsLevel || 'III');
+
   // Step 3: Assessment Answers (Map of questionId -> score 0-5)
   const [answers, setAnswers] = useState<Record<string, number>>({});
 
@@ -529,6 +534,115 @@ export const AssessmentWizardPage: React.FC<AssessmentWizardPageProps> = ({ onNa
                 onChange={(e) => setPrecautionsContraindications(e.target.value)}
                 placeholder="Masalan: bo‘yinni keskin bukish taqiqlanadi, shovqindan bezovtalanadi..."
               />
+            </div>
+
+            {/* Standardized Functional Classifications (GMFCS, MACS, CFCS) */}
+            <div className="pt-4 border-t border-slate-100 space-y-4">
+              <div className="flex items-center space-x-2">
+                <Stethoscope className="w-4 h-4 text-primary-600" />
+                <h4 className="text-sm font-bold text-slate-900">
+                  Xalqaro Funksional Tasniflar (GMFCS, MACS, CFCS)
+                </h4>
+              </div>
+
+              {/* GMFCS */}
+              <div className="space-y-1.5 p-3.5 bg-slate-50 rounded-2xl border border-slate-200">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-800">
+                    GMFCS (Yirik motor funksiyasi): <span className="text-primary-700 font-extrabold">Daraja {gmfcsLevel}</span>
+                  </label>
+                  <span className="text-[11px] text-slate-500 font-medium">Gross Motor</span>
+                </div>
+                <div className="grid grid-cols-5 gap-1.5 pt-1">
+                  {[
+                    { lvl: 'I', desc: 'Cheklovlarsiz yuradi' },
+                    { lvl: 'II', desc: 'Yengil cheklov' },
+                    { lvl: 'III', desc: 'Xodunok/tayanch bilan' },
+                    { lvl: 'IV', desc: 'Aravacha/adaptiv o‘rindiq' },
+                    { lvl: 'V', desc: 'To‘liq ko‘chirish aravachada' }
+                  ].map(item => (
+                    <button
+                      type="button"
+                      key={item.lvl}
+                      onClick={() => setGmfcsLevel(item.lvl)}
+                      className={`p-2 rounded-xl text-center border transition-all ${
+                        gmfcsLevel === item.lvl
+                          ? 'bg-primary-600 text-white border-primary-600 shadow-sm font-bold'
+                          : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      <div className="text-xs font-extrabold">{item.lvl}</div>
+                      <div className="text-[9px] mt-0.5 leading-tight opacity-90 hidden sm:block">{item.desc}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* MACS */}
+              <div className="space-y-1.5 p-3.5 bg-slate-50 rounded-2xl border border-slate-200">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-800">
+                    MACS (Qo‘l harakati qobiliyati): <span className="text-indigo-700 font-extrabold">Daraja {macsLevel}</span>
+                  </label>
+                  <span className="text-[11px] text-slate-500 font-medium">Manual Ability</span>
+                </div>
+                <div className="grid grid-cols-5 gap-1.5 pt-1">
+                  {[
+                    { lvl: 'I', desc: 'Oson ushlaydi' },
+                    { lvl: 'II', desc: 'Biroz sekinroq' },
+                    { lvl: 'III', desc: 'Qiyinchilik bilan' },
+                    { lvl: 'IV', desc: 'Moslashtirilgan sharoitda' },
+                    { lvl: 'V', desc: 'Ushlay olmaydi' }
+                  ].map(item => (
+                    <button
+                      type="button"
+                      key={item.lvl}
+                      onClick={() => setMacsLevel(item.lvl)}
+                      className={`p-2 rounded-xl text-center border transition-all ${
+                        macsLevel === item.lvl
+                          ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm font-bold'
+                          : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      <div className="text-xs font-extrabold">{item.lvl}</div>
+                      <div className="text-[9px] mt-0.5 leading-tight opacity-90 hidden sm:block">{item.desc}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* CFCS */}
+              <div className="space-y-1.5 p-3.5 bg-slate-50 rounded-2xl border border-slate-200">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-800">
+                    CFCS (Kommunikatsiya funksiyasi): <span className="text-emerald-700 font-extrabold">Daraja {cfcsLevel}</span>
+                  </label>
+                  <span className="text-[11px] text-slate-500 font-medium">Communication</span>
+                </div>
+                <div className="grid grid-cols-5 gap-1.5 pt-1">
+                  {[
+                    { lvl: 'I', desc: 'Samarali muloqot' },
+                    { lvl: 'II', desc: 'Sekinroq sur’atda' },
+                    { lvl: 'III', desc: 'Faqat tanishlar bilan' },
+                    { lvl: 'IV', desc: 'Noaniq (AAC zarur)' },
+                    { lvl: 'V', desc: 'Kam ifoda (Doimiy AAC)' }
+                  ].map(item => (
+                    <button
+                      type="button"
+                      key={item.lvl}
+                      onClick={() => setCfcsLevel(item.lvl)}
+                      className={`p-2 rounded-xl text-center border transition-all ${
+                        cfcsLevel === item.lvl
+                          ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm font-bold'
+                          : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      <div className="text-xs font-extrabold">{item.lvl}</div>
+                      <div className="text-[9px] mt-0.5 leading-tight opacity-90 hidden sm:block">{item.desc}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
 

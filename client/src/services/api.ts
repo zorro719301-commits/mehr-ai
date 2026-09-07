@@ -74,7 +74,7 @@ class ApiService {
 
     // 1. Auth: Login
     if (endpoint === '/api/auth/login' && method === 'POST') {
-      const email = body.email || 'dilnoza@mehr.uz';
+      const email = body.email;
       let role: 'PARENT' | 'SPECIALIST' | 'ADMIN' = 'PARENT';
       let fullName = 'Dilnoza Karimova';
 
@@ -102,16 +102,14 @@ class ApiService {
       };
     }
 
-    // 2. Auth: Me
+    // 2. Auth: Me — only honors a session created by a real login on this device.
+    // No session stored means no one is logged in; never fabricate a default identity.
     if (endpoint === '/api/auth/me') {
       const stored = localStorage.getItem('mehr_current_user');
-      const user = stored ? JSON.parse(stored) : {
-        id: 'usr-1',
-        email: 'dilnoza@mehr.uz',
-        fullName: 'Dilnoza Karimova',
-        role: 'PARENT',
-      };
-      return { success: true, data: user as any };
+      if (!stored) {
+        return { success: false, error: 'Avtorizatsiyadan o‘tilmagan' };
+      }
+      return { success: true, data: JSON.parse(stored) as any };
     }
 
     // 3. Children list

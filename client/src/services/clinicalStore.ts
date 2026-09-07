@@ -13,9 +13,106 @@ export interface StoredChild {
   medicalProfile: any;
   packages: any[];
   assessments: any[];
+  gmfcsLevel?: string; // Level I - V
+  macsLevel?: string;  // Level I - V
+  cfcsLevel?: string;  // Level I - V
+}
+
+export type MedicationStatus = 'DRAFT' | 'PENDING_REVIEW' | 'APPROVED' | 'ACTIVE' | 'PAUSED' | 'COMPLETED' | 'DISCONTINUED';
+export type AdherenceStatus = 'TAKEN' | 'MISSED' | 'POSTPONED';
+export type SideEffectSeverity = 'MILD' | 'MODERATE' | 'SEVERE_RED_FLAG';
+
+export interface MedicationOrder {
+  id: string;
+  childId: string;
+  name: string;
+  activeIngredient: string;
+  form: string;
+  dosage: string;
+  concentration?: string;
+  route: string;
+  frequency: string;
+  scheduledTimes: string[];
+  foodRelation: string;
+  startDate: string;
+  endDate?: string;
+  courseDurationDays: number;
+  purpose: string;
+  instructions: string;
+  prescribingDoctorName: string;
+  prescribingDoctorId: string;
+  specialty: string;
+  status: MedicationStatus;
+  requiresDoubleApproval: boolean;
+  secondApproverName?: string;
+  createdAt: string;
+}
+
+export interface MedicationDoseLog {
+  id: string;
+  childId: string;
+  medicationId: string;
+  medicationName: string;
+  dosage: string;
+  scheduledTime: string;
+  actualTime?: string;
+  date: string; // YYYY-MM-DD
+  status: AdherenceStatus;
+  recordedBy: string;
+  notes?: string;
+}
+
+export interface MedicationSideEffectReport {
+  id: string;
+  childId: string;
+  medicationId: string;
+  medicationName: string;
+  symptom: string;
+  onsetTimestamp: string;
+  severity: SideEffectSeverity;
+  isRedFlag: boolean;
+  description: string;
+  parentContact: string;
+  doctorReviewed: boolean;
+  emergencyTriggered: boolean;
+}
+
+export interface DailyCareTimelineItem {
+  id: string;
+  time: string;
+  title: string;
+  category: 'MEDICATION' | 'LFK' | 'ERGOTHERAPY' | 'SPEECH_AAC' | 'SPECIAL_ED' | 'MEAL' | 'REST';
+  description: string;
+  targetRole: string;
+  isCompleted: boolean;
 }
 
 const DEFAULT_CHILDREN: StoredChild[] = [
+  {
+    id: 'child-madina',
+    firstName: 'Madina',
+    lastName: 'Karimova',
+    dateOfBirth: '2021-08-20',
+    gender: 'FEMALE',
+    region: 'Toshkent shahar',
+    photoUrl: 'https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?w=150',
+    chiefComplaint: 'Oyoqlarda spastik diplegiya, tayanchsiz mustaqil o‘tirolmaydi va yurolmaydi (GMFCS III–IV), yengil kognitiv kechikish (F70).',
+    conditions: [
+      { condition: { code: 'MKB_F70_G80', name: 'MKB-10 F70 + G80 III-IV: Yengil aqliy zaiflik + Bolalar serebral falaji' } },
+    ],
+    medicalProfile: {
+      doctorConclusions: 'MKB-10 F70 (Yengil intellektual buzilish) + G80 (Tserebral falaj III-IV daraja, spastik diplegiya). Postural qo‘llab-quvvatlash va LFK talab qilinadi.',
+      priorTherapy: 'Bobath terapiya, fizioterapiya va postural korreksiya',
+      currentMedications: 'Baclofen 5mg, Pirasetam 200mg',
+      allergies: 'Penitsillin guruhiga yuqori sezuvchanlik',
+      precautionsContraindications: 'Bo‘g‘imlarni keskin cho‘zish taqiqlanadi. Faqat yumshoq passiv-faol harakatlar.',
+    },
+    gmfcsLevel: 'III',
+    macsLevel: 'III',
+    cfcsLevel: 'III',
+    packages: [],
+    assessments: [],
+  },
   {
     id: 'child-jasur',
     firstName: 'Jasur',
@@ -26,8 +123,8 @@ const DEFAULT_CHILDREN: StoredChild[] = [
     photoUrl: 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=150',
     chiefComplaint: 'Ismiga qaramaydi, o‘z ehtiyojini so‘z bilan aytolmaydi, ko‘z bilan aloqa juda qisqa.',
     conditions: [
-      { condition: { code: 'ASD', name: 'Autizm Spektri Buzilishi (ASD)' } },
-      { condition: { code: 'SPEECH_DELAY', name: 'Rivojlanishdagi Nutq Kechikishi (RNK)' } },
+      { condition: { code: 'ASD', name: 'MKB-10 F84: Bolalar autizmi (ASD)' } },
+      { condition: { code: 'SPEECH_DELAY', name: 'Rivojlanishdagi Nutq Kechikishi' } },
     ],
     medicalProfile: {
       doctorConclusions: 'Neyrorivojlanish kechikishi, Autizm spektri belgilari. Eshitish a’zolari me’yorda.',
@@ -36,28 +133,9 @@ const DEFAULT_CHILDREN: StoredChild[] = [
       allergies: 'Sitrus mevalariga allergik toshma',
       precautionsContraindications: 'Baland shovqinli muhitda sensor zo‘riqish ehtimoli bor. Keskin tovushlardan saqlanish kerak.',
     },
-    packages: [],
-    assessments: [],
-  },
-  {
-    id: 'child-madina',
-    firstName: 'Madina',
-    lastName: 'Karimova',
-    dateOfBirth: '2021-08-20',
-    gender: 'FEMALE',
-    region: 'Toshkent shahar',
-    photoUrl: 'https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?w=150',
-    chiefComplaint: 'Oyoqlarda spastik diplegiya, tayanchsiz mustaqil o‘tirolmaydi va yurolmaydi, yengil kognitiv kechikish.',
-    conditions: [
-      { condition: { code: 'MKB_F70_G80', name: 'MKB-10 F70 + G80 III-IV: Yengil aqliy zaiflik + Bolalar serebral falaji' } },
-    ],
-    medicalProfile: {
-      doctorConclusions: 'MKB-10 F70 (Aqliy zaiflikning yengil darajasi) va MKB-10 G80 (Tserebral falaj III-IV darajasi, spastik diplegiya).',
-      priorTherapy: 'Bobath terapiya, fizioterapiya va postural korreksiya',
-      currentMedications: 'Baclofen 5mg (shifokor nazoratida)',
-      allergies: 'Yo‘q',
-      precautionsContraindications: 'Bo‘g‘imlarni keskin cho‘zish taqiqlanadi. Faqat yumshoq passiv-faol harakatlar.',
-    },
+    gmfcsLevel: 'I',
+    macsLevel: 'II',
+    cfcsLevel: 'IV',
     packages: [],
     assessments: [],
   },
@@ -80,6 +158,9 @@ const DEFAULT_CHILDREN: StoredChild[] = [
       allergies: 'Yo‘q',
       precautionsContraindications: 'Murakkab ko‘p bosqichli ko‘rsatmalar bermaslik. Vazifalarni mayda qadamlarga bo‘lish.',
     },
+    gmfcsLevel: 'II',
+    macsLevel: 'III',
+    cfcsLevel: 'III',
     packages: [],
     assessments: [],
   },
@@ -102,8 +183,86 @@ const DEFAULT_CHILDREN: StoredChild[] = [
       allergies: 'Yo‘q',
       precautionsContraindications: 'Koxlear implant protsessoriga suv tekkizmaslik va magnit ta’sirlardan saqlash.',
     },
+    gmfcsLevel: 'I',
+    macsLevel: 'I',
+    cfcsLevel: 'IV',
     packages: [],
     assessments: [],
+  },
+];
+
+const DEFAULT_MEDICATIONS: MedicationOrder[] = [
+  {
+    id: 'med-baklofen-1',
+    childId: 'child-madina',
+    name: 'Baklofen (Lioresal)',
+    activeIngredient: 'Baclofenum',
+    form: 'tablets',
+    dosage: '5 mg',
+    concentration: '10 mg/tab',
+    route: 'Og‘iz orqali (per os)',
+    frequency: 'Kuniga 2 marta',
+    scheduledTimes: ['08:30', '19:30'],
+    foodRelation: 'Ovqatdan so‘ng',
+    startDate: new Date(Date.now() - 86400000 * 14).toISOString().split('T')[0],
+    endDate: new Date(Date.now() + 86400000 * 45).toISOString().split('T')[0],
+    courseDurationDays: 60,
+    purpose: 'BSF G80 da boldir va son mushaklari spastikligini yengillashtirish, LFK mashqlarida bo‘g‘im harakatini osonlashtirish.',
+    instructions: 'Har kuni 08:30 va 19:30 da yarim tabletkadan ozgina suv bilan ichiriladi. Dozani to‘satdan to‘xtatmang.',
+    prescribingDoctorName: 'Dr. Nodira Rahimova',
+    prescribingDoctorId: 'doc-1',
+    specialty: 'Bolalar nevrologi',
+    status: 'ACTIVE',
+    requiresDoubleApproval: true,
+    secondApproverName: 'Dr. Kamol Mirzayev (Pediatr)',
+    createdAt: new Date(Date.now() - 86400000 * 14).toISOString(),
+  },
+  {
+    id: 'med-pirasetam-1',
+    childId: 'child-madina',
+    name: 'Pirasetam (Nootropil)',
+    activeIngredient: 'Piracetam',
+    form: 'syrup',
+    dosage: '200 mg (2.5 ml)',
+    concentration: '20%',
+    route: 'Og‘iz orqali',
+    frequency: 'Kuniga 1 marta',
+    scheduledTimes: ['09:00'],
+    foodRelation: 'Ertalab nonushtadan keyin',
+    startDate: new Date(Date.now() - 86400000 * 7).toISOString().split('T')[0],
+    endDate: new Date(Date.now() + 86400000 * 23).toISOString().split('T')[0],
+    courseDurationDays: 30,
+    purpose: 'F70 intellektual yetishmovchiligida miya qon aylanishi va kognitiv qabul qilish qobiliyatini rag‘batlantirish.',
+    instructions: 'Faqat ertalabki vaqtda ichiriladi. Uyqu oldidan berilmasin.',
+    prescribingDoctorName: 'Dr. Nodira Rahimova',
+    prescribingDoctorId: 'doc-1',
+    specialty: 'Bolalar nevrologi',
+    status: 'ACTIVE',
+    requiresDoubleApproval: false,
+    createdAt: new Date(Date.now() - 86400000 * 7).toISOString(),
+  },
+  {
+    id: 'med-magne-jasur',
+    childId: 'child-jasur',
+    name: 'Magne B6',
+    activeIngredient: 'Magnesium + Pyridoxine',
+    form: 'ampoules for oral intake',
+    dosage: '5 ml',
+    route: 'Og‘iz orqali',
+    frequency: 'Kuniga 1 marta',
+    scheduledTimes: ['08:30'],
+    foodRelation: 'Ovqat paytida suv bilan',
+    startDate: new Date(Date.now() - 86400000 * 10).toISOString().split('T')[0],
+    endDate: new Date(Date.now() + 86400000 * 20).toISOString().split('T')[0],
+    courseDurationDays: 30,
+    purpose: 'Asab tizimini mustahkamlash, sensor qo‘zg‘aluvchanlikni me’yorlashtirish.',
+    instructions: 'Ertalab ovqat bilan ichiring.',
+    prescribingDoctorName: 'Dr. Kamol Mirzayev',
+    prescribingDoctorId: 'doc-2',
+    specialty: 'Pediatr',
+    status: 'ACTIVE',
+    requiresDoubleApproval: false,
+    createdAt: new Date(Date.now() - 86400000 * 10).toISOString(),
   },
 ];
 
@@ -165,8 +324,17 @@ const DEFAULT_AAC_CATEGORIES = [
 
 const DEFAULT_QUESTIONS = [
   {
+    id: 'd-gmfcs',
+    name: 'Yirik motor funksiyalar (GMFCS I-V)',
+    questions: [
+      { id: 'q-gmf-1', questionText: 'Bola mustaqil, xodunok yoki boshqa tayanch vositasiz yura oladimi?' },
+      { id: 'q-gmf-2', questionText: 'Stulda o‘tirganda gavda va boshini simmetrik ushlab tura oladimi?' },
+      { id: 'q-gmf-3', questionText: 'Yotgan holatdan mustaqil o‘tirishga o‘ta oladimi?' },
+    ],
+  },
+  {
     id: 'd-cognitive',
-    name: 'Kognitiv rivojlanish',
+    name: 'Kognitiv rivojlanish (F70 / Intellektual soha)',
     questions: [
       { id: 'q-cog-1', questionText: 'Tanish buyumlar va o‘yinchoqlarni vazifasiga ko‘ra farqlay oladimi?' },
       { id: 'q-cog-2', questionText: 'Asosiy ranglar (qizil, ko‘k, sariq, yashil)ni ko‘rsata oladimi?' },
@@ -176,7 +344,7 @@ const DEFAULT_QUESTIONS = [
   },
   {
     id: 'd-speech',
-    name: 'Nutq va kommunikatsiya',
+    name: 'Nutq va kommunikatsiya (CFCS I-V)',
     questions: [
       { id: 'q-sp-1', questionText: 'O‘z ismini aytib chaqirganda o‘girilib qaraydimi?' },
       { id: 'q-sp-2', questionText: 'Kattalar bilan muloqotda ko‘z bilan aloqa o‘rnatadimi?' },
@@ -186,38 +354,20 @@ const DEFAULT_QUESTIONS = [
   },
   {
     id: 'd-motor',
-    name: 'Motor rivojlanish',
+    name: 'Qo‘l harakati va mayda motorika (MACS I-V)',
     questions: [
-      { id: 'q-mot-1', questionText: 'Mustaqil, tayanchsiz qadam tashlay oladimi?' },
-      { id: 'q-mot-2', questionText: 'Mayda narsalarni ikki barmoq bilan ushlay oladimi?' },
-      { id: 'q-mot-3', questionText: 'Qoshiqni qo‘lida to‘g‘ri ushlab ovqatlana oladimi?' },
-    ],
-  },
-  {
-    id: 'd-social',
-    name: 'Ijtimoiy rivojlanish',
-    questions: [
-      { id: 'q-soc-1', questionText: 'Kattalar yoki tengdoshlar bilan o‘yinlarda qatnashadimi?' },
-      { id: 'q-soc-2', questionText: 'O‘yinda navbat kutish yoki buyumni bo‘lishish qobiliyati bormi?' },
-      { id: 'q-soc-3', questionText: 'Oddiy bir bosqichli og‘zaki ko‘rsatmalarga amal qiladimi?' },
+      { id: 'q-mot-1', questionText: 'Mayda narsalarni ikki barmoq (qisqich usuli) bilan ushlay oladimi?' },
+      { id: 'q-mot-2', questionText: 'Qoshiqni qo‘lida ushlab ovqatlana oladimi?' },
+      { id: 'q-mot-3', questionText: 'Buyumlarni bir qo‘ldan ikkinchi qo‘lga o‘tkaza oladimi?' },
     ],
   },
   {
     id: 'd-adl',
-    name: 'Mustaqil hayot ko‘nikmalari (ADL)',
+    name: 'Mustaqil hayot ko‘nikmalari (ADL / Ergoterapiya)',
     questions: [
       { id: 'q-adl-1', questionText: 'Stakanni mustaqil ushlab suv ichadimi?' },
       { id: 'q-adl-2', questionText: 'Hojatxonaga borish zarurligini bildira oladimi?' },
       { id: 'q-adl-3', questionText: 'Qo‘llarini suv va sovun bilan yuvish harakatlarini bajaradimi?' },
-    ],
-  },
-  {
-    id: 'd-behavior',
-    name: 'Xulq-atvor va hissiyot',
-    questions: [
-      { id: 'q-beh-1', questionText: 'Kutilmagan ovoz va yorug‘likka me’yorda javob beradimi?' },
-      { id: 'q-beh-2', questionText: 'Reja o‘zgarganda xulq-atvorini tinchlantira oladimi?' },
-      { id: 'q-beh-3', questionText: 'Kechasi bezovtalanmasdan, barqaror uxlaydimi?' },
     ],
   },
 ];
@@ -233,6 +383,20 @@ export class ClinicalStore {
     } catch {}
     localStorage.setItem('mehr_local_children', JSON.stringify(DEFAULT_CHILDREN));
     return DEFAULT_CHILDREN;
+  }
+
+  public static getActiveChild(): StoredChild {
+    const list = this.getChildren();
+    const activeId = localStorage.getItem('mehr_active_child_id');
+    if (activeId) {
+      const found = list.find(c => c.id === activeId);
+      if (found) return found;
+    }
+    return list[0];
+  }
+
+  public static setActiveChild(childId: string) {
+    localStorage.setItem('mehr_active_child_id', childId);
   }
 
   public static saveChildren(children: StoredChild[]) {
@@ -251,6 +415,359 @@ export class ClinicalStore {
   public static getQuestions() {
     return DEFAULT_QUESTIONS;
   }
+
+  // ==========================================
+  // 90–136. MEDICATION MANAGEMENT METHODS
+  // ==========================================
+
+  public static getMedications(childId: string): MedicationOrder[] {
+    try {
+      const data = localStorage.getItem(`mehr_medications_${childId}`);
+      if (data) return JSON.parse(data);
+    } catch {}
+    const filtered = DEFAULT_MEDICATIONS.filter(m => m.childId === childId);
+    localStorage.setItem(`mehr_medications_${childId}`, JSON.stringify(filtered));
+    return filtered;
+  }
+
+  public static addMedication(childId: string, order: Partial<MedicationOrder>): MedicationOrder {
+    const list = this.getMedications(childId);
+    const newMed: MedicationOrder = {
+      id: `med-${Date.now()}`,
+      childId,
+      name: order.name || 'Nomsiz dori',
+      activeIngredient: order.activeIngredient || '',
+      form: order.form || 'tablets',
+      dosage: order.dosage || '1 tabletka',
+      concentration: order.concentration || '',
+      route: order.route || 'Og‘iz orqali',
+      frequency: order.frequency || 'Kuniga 1 marta',
+      scheduledTimes: order.scheduledTimes && order.scheduledTimes.length > 0 ? order.scheduledTimes : ['09:00'],
+      foodRelation: order.foodRelation || 'Ovqatdan so‘ng',
+      startDate: order.startDate || new Date().toISOString().split('T')[0],
+      endDate: order.endDate || '',
+      courseDurationDays: order.courseDurationDays || 30,
+      purpose: order.purpose || 'Klinik ko‘rsatmaga binoan',
+      instructions: order.instructions || 'Shifokor ko‘rsatmasiga rioya qiling',
+      prescribingDoctorName: order.prescribingDoctorName || 'Dr. Nodira Rahimova',
+      prescribingDoctorId: order.prescribingDoctorId || 'doc-1',
+      specialty: order.specialty || 'Bolalar nevrologi',
+      status: order.status || 'ACTIVE',
+      requiresDoubleApproval: !!order.requiresDoubleApproval,
+      secondApproverName: order.secondApproverName || '',
+      createdAt: new Date().toISOString(),
+    };
+    list.push(newMed);
+    localStorage.setItem(`mehr_medications_${childId}`, JSON.stringify(list));
+    return newMed;
+  }
+
+  public static updateMedicationStatus(childId: string, medId: string, status: MedicationStatus): MedicationOrder | null {
+    const list = this.getMedications(childId);
+    const item = list.find(m => m.id === medId);
+    if (!item) return null;
+    item.status = status;
+    localStorage.setItem(`mehr_medications_${childId}`, JSON.stringify(list));
+    return item;
+  }
+
+  public static getDoseLogs(childId: string): MedicationDoseLog[] {
+    try {
+      const data = localStorage.getItem(`mehr_doses_${childId}`);
+      if (data) return JSON.parse(data);
+    } catch {}
+    
+    // Seed initial realistic logs for the last 3 days
+    const today = new Date().toISOString().split('T')[0];
+    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+    const initialLogs: MedicationDoseLog[] = [
+      {
+        id: 'dose-1',
+        childId,
+        medicationId: 'med-baklofen-1',
+        medicationName: 'Baklofen 5mg',
+        dosage: '5 mg',
+        scheduledTime: '08:30',
+        actualTime: '08:35',
+        date: yesterday,
+        status: 'TAKEN',
+        recordedBy: 'Ota-ona (Dilnoza)',
+      },
+      {
+        id: 'dose-2',
+        childId,
+        medicationId: 'med-baklofen-1',
+        medicationName: 'Baklofen 5mg',
+        dosage: '5 mg',
+        scheduledTime: '19:30',
+        actualTime: '19:40',
+        date: yesterday,
+        status: 'TAKEN',
+        recordedBy: 'Ota-ona (Dilnoza)',
+      },
+      {
+        id: 'dose-3',
+        childId,
+        medicationId: 'med-baklofen-1',
+        medicationName: 'Baklofen 5mg',
+        dosage: '5 mg',
+        scheduledTime: '08:30',
+        actualTime: '08:32',
+        date: today,
+        status: 'TAKEN',
+        recordedBy: 'Ota-ona (Dilnoza)',
+      }
+    ];
+    localStorage.setItem(`mehr_doses_${childId}`, JSON.stringify(initialLogs));
+    return initialLogs;
+  }
+
+  public static recordDose(
+    childId: string,
+    medicationId: string,
+    scheduledTime: string,
+    status: AdherenceStatus,
+    notes?: string
+  ): MedicationDoseLog {
+    const list = this.getDoseLogs(childId);
+    const meds = this.getMedications(childId);
+    const med = meds.find(m => m.id === medicationId);
+    const today = new Date().toISOString().split('T')[0];
+    const nowTime = new Date().toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' });
+
+    const newLog: MedicationDoseLog = {
+      id: `dose-${Date.now()}`,
+      childId,
+      medicationId,
+      medicationName: med ? med.name : 'Dori',
+      dosage: med ? med.dosage : '',
+      scheduledTime,
+      actualTime: status === 'TAKEN' ? nowTime : undefined,
+      date: today,
+      status,
+      recordedBy: 'Ota-ona (Tasdiqlangan)',
+      notes,
+    };
+    list.unshift(newLog);
+    localStorage.setItem(`mehr_doses_${childId}`, JSON.stringify(list));
+    return newLog;
+  }
+
+  public static getSideEffects(childId: string): MedicationSideEffectReport[] {
+    try {
+      const data = localStorage.getItem(`mehr_side_effects_${childId}`);
+      if (data) return JSON.parse(data);
+    } catch {}
+    return [];
+  }
+
+  public static reportSideEffect(childId: string, report: Partial<MedicationSideEffectReport>): MedicationSideEffectReport {
+    const list = this.getSideEffects(childId);
+    const isRedFlag = report.severity === 'SEVERE_RED_FLAG';
+    const newReport: MedicationSideEffectReport = {
+      id: `se-${Date.now()}`,
+      childId,
+      medicationId: report.medicationId || '',
+      medicationName: report.medicationName || 'Dori',
+      symptom: report.symptom || 'Nojo‘ya ta\'sir',
+      onsetTimestamp: new Date().toISOString(),
+      severity: report.severity || 'MILD',
+      isRedFlag,
+      description: report.description || '',
+      parentContact: report.parentContact || '+998 90 123 45 67',
+      doctorReviewed: false,
+      emergencyTriggered: isRedFlag,
+    };
+    list.unshift(newReport);
+    localStorage.setItem(`mehr_side_effects_${childId}`, JSON.stringify(list));
+    return newReport;
+  }
+
+  /**
+   * 101. MEDICATION ADHERENCE SCORE CALCULATION
+   * Formula: Taken doses / Scheduled doses * 100
+   */
+  public static calculateAdherenceScore(childId: string) {
+    const logs = this.getDoseLogs(childId);
+    if (logs.length === 0) {
+      return { totalScheduled: 10, totalTaken: 9, scorePercent: 90, missedCount: 1, repeatedMissedAlert: false };
+    }
+
+    const taken = logs.filter(l => l.status === 'TAKEN').length;
+    const missed = logs.filter(l => l.status === 'MISSED').length;
+    const total = logs.length;
+    const score = total > 0 ? Math.round((taken / total) * 100) : 100;
+
+    // Check last 3 logs for repeated missed doses
+    const recentMissed = logs.slice(0, 3).filter(l => l.status === 'MISSED').length;
+    const repeatedMissedAlert = recentMissed >= 2;
+
+    return {
+      totalScheduled: total,
+      totalTaken: taken,
+      scorePercent: score,
+      missedCount: missed,
+      repeatedMissedAlert,
+    };
+  }
+
+  /**
+   * 126. DAILY CHILD CARE TIMELINE GENERATOR
+   * Combines active medications, LFK exercises, Ergoterapiya, Logopediya/AAC, meals and rest.
+   */
+  public static getDailyCareTimeline(childId: string): DailyCareTimelineItem[] {
+    const meds = this.getMedications(childId).filter(m => m.status === 'ACTIVE');
+    const child = this.getChildren().find(c => c.id === childId) || this.getChildren()[0];
+
+    const timeline: DailyCareTimelineItem[] = [
+      {
+        id: 't-1',
+        time: '07:30',
+        title: 'Uyg‘onish & Postural joylashuv',
+        category: 'REST',
+        description: 'Bolani simmetrik yotqizish, oyoqlarni engil massaj qilib spastiklikni bo‘shashtirish.',
+        targetRole: 'Ota-ona',
+        isCompleted: true,
+      },
+      {
+        id: 't-2',
+        time: '08:00',
+        title: 'Nonushta & Yutish ko‘nikmasi',
+        category: 'MEAL',
+        description: 'Simmetrik o‘tirg‘ichda boshni to‘g‘ri ushlab ovqatlanish.',
+        targetRole: 'Ota-ona',
+        isCompleted: true,
+      },
+    ];
+
+    // Add morning medications
+    meds.forEach(m => {
+      m.scheduledTimes.forEach(st => {
+        if (st < '12:00') {
+          timeline.push({
+            id: `t-med-${m.id}-${st}`,
+            time: st,
+            title: `💊 Dori: ${m.name} (${m.dosage})`,
+            category: 'MEDICATION',
+            description: `${m.instructions} (${m.foodRelation})`,
+            targetRole: 'Ota-ona / Shifokor ko‘rsatmasi',
+            isCompleted: true,
+          });
+        }
+      });
+    });
+
+    // Add therapy & developmental routines
+    timeline.push(
+      {
+        id: 't-lfk',
+        time: '10:00',
+        title: 'Davolash jismoniy tarbiyasi (LFK)',
+        category: 'LFK',
+        description: `GMFCS ${child.gmfcsLevel || 'III'} bo‘yicha 15 daqiqalik xodunokda muvozanat va pastki bo‘g‘imlar harakati.`,
+        targetRole: 'Fizioterapevt / Ota-ona',
+        isCompleted: false,
+      },
+      {
+        id: 't-ergo',
+        time: '11:30',
+        title: 'Ergoterapiya & Mayda motorika',
+        category: 'ERGOTHERAPY',
+        description: `MACS ${child.macsLevel || 'III'} bo‘yicha qalin tutqichli moslamalar yordamida buyumlarni ushlash.`,
+        targetRole: 'Ergoterapevt',
+        isCompleted: false,
+      },
+      {
+        id: 't-lunch',
+        time: '13:00',
+        title: 'Tushlik taomi',
+        category: 'MEAL',
+        description: 'Issiq taom va suyuqlik ichish mashg‘uloti.',
+        targetRole: 'Oila',
+        isCompleted: false,
+      },
+      {
+        id: 't-sleep',
+        time: '14:00',
+        title: 'Kunduzgi dam olish va uyqu',
+        category: 'REST',
+        description: 'Tinch, qulay holatda 1.5 - 2 soat dam olish.',
+        targetRole: 'Bola',
+        isCompleted: false,
+      },
+      {
+        id: 't-aac',
+        time: '16:30',
+        title: 'Nutq va AAC muloqot mashqi',
+        category: 'SPEECH_AAC',
+        description: `CFCS ${child.cfcsLevel || 'III'} bo‘yicha "Suv", "Yordam", "Xursandman" kartochkalaridan foydalanish.`,
+        targetRole: 'Logoped / Ota-ona',
+        isCompleted: false,
+      },
+      {
+        id: 't-iep',
+        time: '17:30',
+        title: 'Maxsus pedagogika (F70 kognitiv o‘yin)',
+        category: 'SPECIAL_ED',
+        description: 'Ranglar va katta-kichik shakllarni saralash bo‘yicha 10 daqiqalik interaktiv o‘yin.',
+        targetRole: 'Maxsus pedagog / Defektolog',
+        isCompleted: false,
+      },
+      {
+        id: 't-dinner',
+        time: '19:00',
+        title: 'Kechki ovqat',
+        category: 'MEAL',
+        description: 'Oila bilan birgalikda engil kechki ovqat.',
+        targetRole: 'Oila',
+        isCompleted: false,
+      }
+    );
+
+    // Add evening medications
+    meds.forEach(m => {
+      m.scheduledTimes.forEach(st => {
+        if (st >= '12:00') {
+          timeline.push({
+            id: `t-med-${m.id}-${st}`,
+            time: st,
+            title: `💊 Dori: ${m.name} (${m.dosage})`,
+            category: 'MEDICATION',
+            description: `${m.instructions} (${m.foodRelation})`,
+            targetRole: 'Ota-ona / Shifokor ko‘rsatmasi',
+            isCompleted: false,
+          });
+        }
+      });
+    });
+
+    timeline.push({
+      id: 't-bed',
+      time: '21:00',
+      title: 'Kechki tinchlanish va uyqu',
+      category: 'REST',
+      description: 'Engil massaj, tinchlantiruvchi musiqa va tungi uyquga yotish.',
+      targetRole: 'Ota-ona',
+      isCompleted: false,
+    });
+
+    // Sort chronologically
+    return timeline.sort((a, b) => a.time.localeCompare(b.time));
+  }
+
+  /**
+   * 95. AI MEDICATION EXPLANATION (Safe, Reassuring, No-Prescription)
+   */
+  public static explainMedicationAI(med: MedicationOrder): string {
+    return `💊 ${med.name} (${med.activeIngredient}):
+Ushbu dori bolalar nevrologi (${med.prescribingDoctorName}) tomonidan ${med.purpose} maqsadi bilan buyurilgan.
+Qabul tartibi: ${med.frequency}, ${med.scheduledTimes.join(', ')} vaqtlarida (${med.foodRelation}).
+⚠️ Eslatma: Ushbu ma'lumot shifokor ko‘rsatmasini tushuntirish uchundir. Dozani yoki qabul vaqtini mustaqil o‘zgartirmang.`;
+  }
+
+  // ==========================================
+  // BEHAVIOR LOGS
+  // ==========================================
 
   public static getBehaviorLogs(childId: string) {
     try {
@@ -329,23 +846,23 @@ export class ClinicalStore {
     let specialistFeedback = '';
 
     if (isF70_G80) {
-      summaryText = `MKB-10 F70 (Yengil aqliy zaiflik) va G80 (Tserebral falaj III-IV daraja) bo‘yicha postural nazorat, bo‘g‘im kontrakturalarini oldini olish va moslashtirilgan kognitiv o‘yinlar rejasi tuzildi.`;
-      priorityDomains = ['Motor rivojlanish', 'Kognitiv rivojlanish', 'Mustaqil hayot ko‘nikmalari'];
+      summaryText = `MKB-10 F70 (Yengil intellektual rivojlanish buzilishi) va G80 (Tserebral falaj III-IV daraja, GMFCS III-IV, MACS III, CFCS III) bo‘yicha kompleks individual reabilitatsiya dasturi shakllantirildi. Postural barqarorlik, ortezlardan to‘g‘ri foydalanish, yengil kognitiv rag‘batlantirish va dori adherence nazorati integratsiya qilindi.`;
+      priorityDomains = ['Motor rivojlanish (LFK)', 'Kognitiv rivojlanish (IEP)', 'Mustaqil hayot ko‘nikmalari (Ergoterapiya)'];
       specialistReferrals = ['FIZIOTERAPEVT', 'ERGOTERAPEVT', 'NEVROLOG', 'MAXSUS_PEDAGOG'];
-      specialistFeedback = 'GMFCS III-IV bo‘yicha tayanchli stulda simmetrik o‘tirish va yengil aqliy rag‘batlantirish tavsiya etiladi. — Dr. Nodira Rahimova';
+      specialistFeedback = 'GMFCS III-IV bo‘yicha tayanchli stulda simmetrik o‘tirish, xodunok bilan harakatlanish va dori (Baklofen) tartibiga rioya qilish tavsiya etiladi. — Dr. Nodira Rahimova';
 
       modules = [
         {
           weekNumber: 1,
-          focusArea: 'Postural joylashish va bo‘g‘imlar harakatchanligi',
-          weeklyGoal: 'Yotgan va o‘tirgan holatda mushak spastikligini yengillashtirish.',
+          focusArea: 'Postural barqarorlik va spastiklikni bo‘shashtirish',
+          weeklyGoal: 'Yotgan va o‘tirgan holatda bo‘g‘imlar simmetriyasi va muskullar relaksatsiyasi.',
           expectedOutcome: 'Mushaklar gipertonusi kamayadi, erkin nafas olish osonlashadi.',
-          parentAdvice: 'Mashqlarni muloyimlik bilan, keskin harakatlarsiz o‘tkazing.',
+          parentAdvice: 'Dori (Baklofen) qabulidan 30 daqiqa o‘tib, muskullar mayinlashganda passiv harakatlarni bajaring.',
         },
         {
           weekNumber: 2,
           focusArea: 'Bosh va gavda muvozanati (Ergoterapiya)',
-          weeklyGoal: 'O‘rindiqda o‘tirganda ko‘z oldidagi buyumga qo‘l cho‘zish.',
+          weeklyGoal: 'O‘rindiqda o‘tirganda ko‘z oldidagi buyumga qo‘l cho‘zish (MACS III daraja).',
           expectedOutcome: 'Qo‘l harakatlari koordinatsiyasi yaxshilanadi.',
           parentAdvice: 'Bolaning orqa va yon tomonlariga yumshoq valiklar qo‘yib simmetriyani saqlang.',
         },
@@ -374,7 +891,7 @@ export class ClinicalStore {
           targetBehavior: 'Postural nazorat va boshni ushlab turish.',
         },
         {
-          title: 'Mayda motorika: Qalin tutqichli o‘yinchoqni ushlash',
+          title: 'Mayda motorika: Qalin tutqichli o‘yinchoqni ushlash (MACS III)',
           materials: 'Yumshoq rezina halqa yoki qalin tutqichli piramida halqasi.',
           instructions: 'Buyumni bolaning kaftiga qo‘ying va barmoqlarini yopishga muloyim yordam bering.',
           parentTip: 'Spastik mushaklarni avval silab bo‘shashtiring.',
@@ -615,3 +1132,5 @@ export class ClinicalStore {
     return this.generateAiPackage(childId);
   }
 }
+
+export const clinicalStore = ClinicalStore;

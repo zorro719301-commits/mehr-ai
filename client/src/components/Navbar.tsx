@@ -2,7 +2,6 @@ import React from 'react';
 import { useAuth } from '../context/AuthContext.js';
 import { useLanguage } from '../context/LanguageContext.js';
 import {
-  Heart,
   Activity,
   MessageSquare,
   BookOpen,
@@ -13,16 +12,18 @@ import {
   User,
   LogOut,
   Sparkles,
-  ChevronDown
+  ChevronDown,
+  Mic
 } from 'lucide-react';
 
 interface NavbarProps {
   currentTab: string;
   setCurrentTab: (tab: string) => void;
   onOpenAiChat: () => void;
+  onOpenVoiceAssistant?: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpenAiChat }) => {
+export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpenAiChat, onOpenVoiceAssistant }) => {
   const { user, role, isOnline, activeChild, childrenList, setActiveChild, logout } = useAuth();
   const { language, setLanguage, t } = useLanguage();
 
@@ -35,9 +36,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpe
             className="flex items-center space-x-3 cursor-pointer select-none"
             onClick={() => setCurrentTab('landing')}
           >
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-brand-600 to-brand-400 flex items-center justify-center text-white shadow-card">
-              <Heart className="w-6 h-6 fill-white" />
-            </div>
+            <img src="/images/logo-icon.png" alt="MEHR AI" className="w-10 h-10 object-contain drop-shadow-sm" />
             <div>
               <span className="text-xl font-extrabold tracking-tight bg-gradient-to-r from-brand-700 via-brand-600 to-emerald-600 bg-clip-text text-transparent">
                 MEHR AI
@@ -168,12 +167,25 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpe
             </div>
 
             {/* AI Assistant Quick Trigger */}
+            {/* AI Voice Assistant Quick Trigger */}
+            {onOpenVoiceAssistant && (
+              <button
+                onClick={onOpenVoiceAssistant}
+                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs font-semibold shadow-card hover:brightness-110 transition-all cursor-pointer"
+                title="Tabiiy o‘zbek tilidagi AI ovozli yordamchi"
+              >
+                <Mic className="w-3.5 h-3.5 text-amber-300 animate-pulse" />
+                <span className="hidden sm:inline">🎙 Ovozli AI</span>
+              </button>
+            )}
+
+            {/* AI Assistant Quick Trigger */}
             <button
               onClick={onOpenAiChat}
-              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-brand-600 to-indigo-600 text-white text-xs font-semibold shadow-card hover:brightness-110 transition-all"
+              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-brand-600 to-emerald-600 text-white text-xs font-semibold shadow-card hover:brightness-110 transition-all"
             >
               <Sparkles className="w-3.5 h-3.5 fill-amber-300 text-amber-300" />
-              <span>MEHR AI Yordamchi</span>
+              <span>Chat AI</span>
             </button>
 
             {/* Language Switcher */}

@@ -32,3 +32,28 @@
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
+
+/* Landing page: soft floating blobs for gradient-mesh backgrounds */
+@keyframes blob-float {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(20px, -30px) scale(1.08); }
+  66% { transform: translate(-15px, 15px) scale(0.95); }
+}
+.animate-blob {
+  animation: blob-float 14s ease-in-out infinite;
+}
+.animation-delay-2000 {
+  animation-delay: 2s;
+}
+.animation-delay-4000 {
+  animation-delay: 4s;
+}
+
+/* Landing page: gentle vertical float for hero art / floating badges */
+@keyframes gentle-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+.animate-gentle-float {
+  animation: gentle-float 5s ease-in-out infinite;
+}

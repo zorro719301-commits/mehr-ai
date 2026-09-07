@@ -1,9 +1,11 @@
-const CACHE_NAME = 'mehr-ai-v1';
+const CACHE_NAME = 'mehr-ai-v2';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/favicon.svg'
+  '/favicon-32.png',
+  '/favicon-192.png',
+  '/images/logo-icon.png'
 ];
 
 self.addEventListener('install', (event) => {
